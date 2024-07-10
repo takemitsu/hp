@@ -18,21 +18,31 @@
 <div class="container">
   <form class="form" role="form">
     <div class="input-group mt-3">
-      <input id="unix" type="text" class="form-control" style="max-width: 200px;" value=""/>
+      <span class="input-group-text" style="width: 110px">millisecond</span>
+      <input id="valueOf" type="text" class="form-control" style="max-width: 250px;" value=""/>
+      <button class="btn btn-primary valueOf">実行</button>
+    </div>
+
+    <div class="input-group mt-3">
+      <span class="input-group-text" style="width: 110px">unix</span>
+      <input id="unix" type="text" class="form-control" style="max-width: 250px;" value=""/>
       <button class="btn btn-primary unix">実行</button>
     </div>
 
     <div class="input-group mt-3">
-      <input id="date" type="text" class="form-control " style="max-width: 200px;" value=""/>
+      <span class="input-group-text" style="width: 110px">format</span>
+      <input id="date" type="text" class="form-control " style="max-width: 250px;" value=""/>
       <button class="btn btn-primary date">実行</button>
     </div>
+
     <div class="btn-group mt-3">
       <button class="btn btn-secondary" id="reset-button">リセット</button>
     </div>
-    <div id="err" class="alert alert-danger" style="display: none;" role="alert"></div>
+
+    <div id="err" class="alert alert-danger mt-3" style="display: none;" role="alert"></div>
   </form>
   <hr/>
-  powerd by <a href="http://momentjs.com">Moment.js</a>
+  powerd by <a href="https://day.js.org/">Day.js</a>
 </div>
 
 <!-- script -->
@@ -44,37 +54,73 @@
         crossorigin="anonymous"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"
         integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
-<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.3/moment.min.js"></script> -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment-with-locales.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/locale/ja.js"></script>
+
 <script type="text/javascript">
   $(function () {
-    var now = moment();
+    dayjs.locale('ja');
+    var now = dayjs();
 
     function init() {
-      now = moment();
-      now.locale('ja');
-      $('#unix').val(now.format('X'));
+      now = dayjs();
+      $('#valueOf').val(now.valueOf());
+      $('#unix').val(now.unix());
       $('#date').val(now.format('YYYY-MM-DD HH:mm:ss'));
     }
 
     init();
-    $('button.unix').on('click', function () {
-      var unixtime = $('#unix').val();
-      var day = moment.unix(unixtime);
+
+    $('button.valueOf').on('click', function () {
+      $('#err').text('').hide();
+      var datestring = $('#valueOf').val();
+
+      if (!dayjs(parseInt(datestring, 10)).isValid()) {
+        $('#unix').val("Invalid date");
+        $('#date').val("Invalid date");
+        $('#err').text(datestring + "は有効な数字ではありません").show();
+        return false;
+      }
+      datestring = parseInt(datestring, 10)
+      var day = dayjs(datestring);
+      $('#unix').val(day.unix());
       $('#date').val(day.format('YYYY-MM-DD HH:mm:ss'));
-      return false;
-    });
-    $('button.date').on('click', function () {
-      var datestring = $('#date').val();
-      var day = moment(datestring);
-      $('#unix').val(day.format('X'));
-      $('#date').val(day.format('YYYY-MM-DD HH:mm:ss'));
+
+
       return false;
     });
 
-    function em(text) {
-      $('#err').text(text).show().fadeOut(3000);
-    }
+    $('button.unix').on('click', function () {
+      $('#err').text('').hide();
+      var datestring = $('#unix').val();
+
+      if (!dayjs(parseInt(datestring, 10)).isValid()) {
+        $('#valueOf').val("Invalid date");
+        $('#date').val("Invalid date");
+        $('#err').text(datestring + "は有効な数字ではありません").show();
+        return false;
+      }
+      datestring = parseInt(datestring, 10)
+      var day = dayjs.unix(datestring);
+      $('#valueOf').val(day.valueOf());
+      $('#date').val(day.format('YYYY-MM-DD HH:mm:ss'));
+
+      return false;
+    });
+    $('button.date').on('click', function () {
+      $('#err').text('').hide();
+      var datestring = $('#date').val();
+      if (!dayjs(datestring).isValid()) {
+        $('#valueOf').val("Invalid date");
+        $('#unix').val("Invalid date");
+        $('#err').text(datestring + "は有効な日付ではありません").show();
+        return false;
+      }
+      var day = dayjs(datestring);
+      $('#valueOf').val(day.valueOf());
+      $('#unix').val(day.unix());
+      return false;
+    });
 
     $('#reset-button').on('click', function () {
       init();
