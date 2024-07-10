@@ -21,25 +21,25 @@
       <div class="col-auto"><label for="n10" class="align-middle" style="width: 60px;">10進数:</label></div>
       <div class="col-auto"><input id="n10" type="text" class="form-control " value=""/></div>
       <div class="col-auto">
-        <button class="btn btn-primary n10">実行</button>
+        <button type="button" class="btn btn-primary n10">実行</button>
       </div>
     </div>
     <div class="row g-2 mt-2">
       <div class="col-auto"><label for="n02" class="align-middle" style="width: 60px;">2進数:</label></div>
       <div class="col-auto"><input id="n02" type="text" class="form-control " value=""/></div>
       <div class="col-auto">
-        <button class="btn btn-primary n02">実行</button>
+        <button type="button" class="btn btn-primary n02">実行</button>
       </div>
     </div>
     <div class="row g-2 mt-2">
       <div class="col-auto"><label for="n16" class="align-middle" style="width: 60px;">16進数:</label></div>
       <div class="col-auto"><input id="n16" type="text" class="form-control " value=""/></div>
       <div class="col-auto">
-        <button class="btn btn-primary n16">実行</button>
+        <button type="button" class="btn btn-primary n16">実行</button>
       </div>
     </div>
     <div class="btn-group mt-3">
-      <button class="btn btn-secondary" id="reset-button">クリア</button>
+      <button type="button" class="btn btn-secondary" id="reset-button">クリア</button>
     </div>
     <div id="err" class="alert alert-danger mt-3" style="display: none;" role="alert"></div>
   </form>
@@ -60,18 +60,16 @@
     // ちょっと考えるのがめんどいのでコレで
     $('button.n10').on('click', function () {
       exchange(10, $('#n10').val());
-      return false;
     });
     $('button.n02').on('click', function () {
       exchange(2, $('#n02').val());
-      return false;
     });
     $('button.n16').on('click', function () {
       exchange(16, $('#n16').val());
-      return false;
     });
 
     function exchange(mode, suji) {
+      $('#err').text('').hide();
       try {
         suji = parseInt(suji, mode);
         if (isNaN(suji)) {
@@ -82,13 +80,11 @@
         $('#n16').val(suji.toString(16));
       } catch (e) {
         em(e);
-      } finally {
-        return false;
       }
     };
 
     function em(text) {
-      $('#err').text(text).show().fadeOut(3000);
+      $('#err').text(text).show();
     }
 
     $('#reset-button').on('click', function () {
@@ -96,7 +92,6 @@
       $('#n02').val('');
       $('#n16').val('');
       $('#err').text('').hide();
-      return false;
     });
   });
 </script>
