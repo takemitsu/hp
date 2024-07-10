@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>unix timestamp変換</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+</head>
+<body>
+<nav class="navbar bg-body-tertiary" id="header" aria-label="header">
+  <div class="container-fluid justify-content-start">
+    <a class="navbar-brand" href="/">takemitsu.net</a>
+    <div class="nav-text">unix timestamp変換</div>
+  </div>
+</nav>
+
+<div class="container">
+  <form class="form" role="form">
+    <div class="input-group mt-3">
+      <input id="unix" type="text" class="form-control" style="max-width: 200px;" value=""/>
+      <button class="btn btn-primary unix">実行</button>
+    </div>
+
+    <div class="input-group mt-3">
+      <input id="date" type="text" class="form-control " style="max-width: 200px;" value=""/>
+      <button class="btn btn-primary date">実行</button>
+    </div>
+    <div class="btn-group mt-3">
+      <button class="btn btn-secondary" id="reset-button">リセット</button>
+    </div>
+    <div id="err" class="alert alert-danger" style="display: none;" role="alert"></div>
+  </form>
+  <hr/>
+  powerd by <a href="http://momentjs.com">Moment.js</a>
+</div>
+
+<!-- script -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"
+        integrity="sha384-fbbOQedDUMZZ5KreZpsbe1LCZPVmfTnH7ois6mU1QK+m14rQ1l2bGBq41eYeM/fS"
+        crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"
+        integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.3/moment.min.js"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment-with-locales.min.js"></script>
+<script type="text/javascript">
+  $(function () {
+    var now = moment();
+
+    function init() {
+      now = moment();
+      now.locale('ja');
+      $('#unix').val(now.format('X'));
+      $('#date').val(now.format('YYYY-MM-DD HH:mm:ss'));
+    }
+
+    init();
+    $('button.unix').on('click', function () {
+      var unixtime = $('#unix').val();
+      var day = moment.unix(unixtime);
+      $('#date').val(day.format('YYYY-MM-DD HH:mm:ss'));
+      return false;
+    });
+    $('button.date').on('click', function () {
+      var datestring = $('#date').val();
+      var day = moment(datestring);
+      $('#unix').val(day.format('X'));
+      $('#date').val(day.format('YYYY-MM-DD HH:mm:ss'));
+      return false;
+    });
+
+    function em(text) {
+      $('#err').text(text).show().fadeOut(3000);
+    }
+
+    $('#reset-button').on('click', function () {
+      init();
+      $('#err').text('').hide();
+      return false;
+    });
+  });
+</script>
+</body>
+</html>

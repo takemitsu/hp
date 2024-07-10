@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>フォントサイズチェック</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+</head>
+<body>
+<nav class="navbar bg-body-tertiary" id="header" aria-label="header">
+  <div class="container-fluid justify-content-start">
+    <a class="navbar-brand" href="/">takemitsu.net</a>
+    <div class="nav-text">font-size</div>
+  </div>
+</nav>
+
+<div class="container mt-3" aria-label="content">
+  <form class="form" role="form">
+    <div class="form-group">
+      <textarea class="form-control" rows="1" id="str" placeholder="input here"></textarea>
+    </div>
+
+    <div class="btn-group mt-3" role="group" id="btns">
+      <button type="button" data-size="12" class="btn btn-secondary">12px</button>
+      <button type="button" data-size="24" class="btn btn-secondary">24px</button>
+      <button type="button" data-size="36" class="btn btn-secondary">36px</button>
+      <button type="button" data-size="48" class="btn btn-secondary">48px</button>
+      <button type="button" data-size="72" class="btn btn-secondary">72px</button>
+      <button type="button" data-size="120" class="btn btn-secondary">120px</button>
+    </div>
+    <div class="btn-group mt-3">
+      <button class="btn btn-danger" style="width:40px;" id="bm"> -</button>
+      <button class="btn btn-primary" style="width:40px;" id="bp"> +</button>
+    </div>
+    <div class="btn-group mt-3">
+      <button class="btn btn-danger" id="bm10"> -10px</button>
+      <button class="btn btn-primary" id="bp10"> +10px</button>
+    </div>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"
+        integrity="sha384-fbbOQedDUMZZ5KreZpsbe1LCZPVmfTnH7ois6mU1QK+m14rQ1l2bGBq41eYeM/fS"
+        crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"
+        integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
+
+<script type="text/javascript">
+    $(function () {
+        var fsize = 36;
+        $('#btns button').on('click', function () {
+            inputsize = $(this).data('size');
+            fsize = parseInt(inputsize);
+            changeFontSize();
+            return false;
+        });
+        $('#bm').on('click', function () {
+            if (fsize > 6) {
+                fsize--;
+                changeFontSize();
+            }
+            return false;
+        });
+        $('#bp').on('click', function () {
+            fsize++;
+            changeFontSize();
+            return false;
+        });
+        $('#bm10').on('click', function () {
+            if (fsize - 10 > 6) {
+                fsize = fsize - 10;
+                changeFontSize();
+            } else {
+                fsize = 6;
+                changeFontSize();
+            }
+            return false;
+        });
+        $('#bp10').on('click', function () {
+            fsize = fsize + 10;
+            changeFontSize();
+            return false;
+        });
+
+        function changeFontSize() {
+            $('#str').css('font-size', fsize + 'px');
+            $('#fonts').text('font-size:' + fsize + 'px');
+        }
+
+        changeFontSize();
+    });
+</script>
+</body>
+</html>

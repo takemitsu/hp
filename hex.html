@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>10進数16進数変換</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+</head>
+<body>
+<nav class="navbar bg-body-tertiary" id="header" aria-label="header">
+  <div class="container-fluid justify-content-start">
+    <a class="navbar-brand" href="/">takemitsu.net</a>
+    <div class="nav-text" id="fonts">10進数16進数変換</div>
+  </div>
+</nav>
+
+<div class="container mt-3">
+  <form class="form" role="form">
+    <div class="row g-2">
+      <div class="col-auto"><label for="n10" class="align-middle" style="width: 60px;">10進数:</label></div>
+      <div class="col-auto"><input id="n10" type="text" class="form-control " value=""/></div>
+      <div class="col-auto">
+        <button class="btn btn-primary n10">実行</button>
+      </div>
+    </div>
+    <div class="row g-2 mt-2">
+      <div class="col-auto"><label for="n02" class="align-middle" style="width: 60px;">2進数:</label></div>
+      <div class="col-auto"><input id="n02" type="text" class="form-control " value=""/></div>
+      <div class="col-auto">
+        <button class="btn btn-primary n02">実行</button>
+      </div>
+    </div>
+    <div class="row g-2 mt-2">
+      <div class="col-auto"><label for="n16" class="align-middle" style="width: 60px;">16進数:</label></div>
+      <div class="col-auto"><input id="n16" type="text" class="form-control " value=""/></div>
+      <div class="col-auto">
+        <button class="btn btn-primary n16">実行</button>
+      </div>
+    </div>
+    <div class="btn-group mt-3">
+      <button class="btn btn-secondary" id="reset-button">クリア</button>
+    </div>
+    <div id="err" class="alert alert-danger mt-3" style="display: none;" role="alert"></div>
+  </form>
+</div>
+
+<!-- script -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"
+        integrity="sha384-fbbOQedDUMZZ5KreZpsbe1LCZPVmfTnH7ois6mU1QK+m14rQ1l2bGBq41eYeM/fS"
+        crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"
+        integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
+
+<script type="text/javascript">
+  $(function () {
+    // ちょっと考えるのがめんどいのでコレで
+    $('button.n10').on('click', function () {
+      exchange(10, $('#n10').val());
+      return false;
+    });
+    $('button.n02').on('click', function () {
+      exchange(2, $('#n02').val());
+      return false;
+    });
+    $('button.n16').on('click', function () {
+      exchange(16, $('#n16').val());
+      return false;
+    });
+
+    function exchange(mode, suji) {
+      try {
+        suji = parseInt(suji, mode);
+        if (isNaN(suji)) {
+          em('parseに失敗');
+        }
+        $('#n10').val(suji.toString(10));
+        $('#n02').val(suji.toString(2));
+        $('#n16').val(suji.toString(16));
+      } catch (e) {
+        em(e);
+      } finally {
+        return false;
+      }
+    };
+
+    function em(text) {
+      $('#err').text(text).show().fadeOut(3000);
+    }
+
+    $('#reset-button').on('click', function () {
+      $('#n10').val('');
+      $('#n02').val('');
+      $('#n16').val('');
+      $('#err').text('').hide();
+      return false;
+    });
+  });
+</script>
+</body>
+</html>
