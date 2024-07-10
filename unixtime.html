@@ -18,25 +18,30 @@
 <div class="container">
   <form class="form" role="form">
     <div class="input-group mt-3">
-      <span class="input-group-text" style="width: 110px">millisecond</span>
-      <input id="valueOf" type="text" class="form-control" style="max-width: 250px;" value=""/>
-      <button class="btn btn-primary valueOf">実行</button>
-    </div>
-
-    <div class="input-group mt-3">
       <span class="input-group-text" style="width: 110px">unix</span>
       <input id="unix" type="text" class="form-control" style="max-width: 250px;" value=""/>
-      <button class="btn btn-primary unix">実行</button>
+      <button type="button" class="btn btn-primary unix">実行</button>
     </div>
 
     <div class="input-group mt-3">
-      <span class="input-group-text" style="width: 110px">format</span>
+      <span class="input-group-text" style="width: 110px">millisecond</span>
+      <input id="valueOf" type="text" class="form-control" style="max-width: 250px;" value=""/>
+      <button type="button" class="btn btn-primary valueOf">実行</button>
+    </div>
+
+    <div class="input-group mt-3">
+      <span class="input-group-text" style="width: 110px">formated</span>
       <input id="date" type="text" class="form-control " style="max-width: 250px;" value=""/>
-      <button class="btn btn-primary date">実行</button>
+      <button type="button" class="btn btn-primary date">実行</button>
+    </div>
+
+    <div class="input-group mt-3">
+      <span class="input-group-text" style="width: 110px">output format</span>
+      <input id="format" type="text" class="form-control " style="max-width: 250px;" value=""/>
     </div>
 
     <div class="btn-group mt-3">
-      <button class="btn btn-secondary" id="reset-button">リセット</button>
+      <button type="button" class="btn btn-secondary" id="reset-button">リセット</button>
     </div>
 
     <div id="err" class="alert alert-danger mt-3" style="display: none;" role="alert"></div>
@@ -61,71 +66,83 @@
   $(function () {
     dayjs.locale('ja');
     var now = dayjs();
+    var formatString
+
+    function setFormat() {
+      var tempFormatString = $('#format').val()
+      if(!tempFormatString) {
+        formatString = "YYYY-MM-DD HH:mm:ss";
+        $('#format').val(formatString);
+      } else {
+        formatString = tempFormatString;
+      }
+    }
 
     function init() {
       now = dayjs();
+      setFormat();
       $('#valueOf').val(now.valueOf());
       $('#unix').val(now.unix());
-      $('#date').val(now.format('YYYY-MM-DD HH:mm:ss'));
+      $('#date').val(now.format(formatString));
     }
 
     init();
 
     $('button.valueOf').on('click', function () {
       $('#err').text('').hide();
-      var datestring = $('#valueOf').val();
+      setFormat();
 
+      var datestring = $('#valueOf').val();
       if (!dayjs(parseInt(datestring, 10)).isValid()) {
         $('#unix').val("Invalid date");
         $('#date').val("Invalid date");
         $('#err').text(datestring + "は有効な数字ではありません").show();
-        return false;
+        return;
       }
       datestring = parseInt(datestring, 10)
       var day = dayjs(datestring);
       $('#unix').val(day.unix());
-      $('#date').val(day.format('YYYY-MM-DD HH:mm:ss'));
-
-
-      return false;
+      $('#date').val(day.format(formatString));
     });
 
     $('button.unix').on('click', function () {
       $('#err').text('').hide();
-      var datestring = $('#unix').val();
+      setFormat();
 
+      var datestring = $('#unix').val();
       if (!dayjs(parseInt(datestring, 10)).isValid()) {
         $('#valueOf').val("Invalid date");
         $('#date').val("Invalid date");
         $('#err').text(datestring + "は有効な数字ではありません").show();
-        return false;
+        return;
       }
       datestring = parseInt(datestring, 10)
       var day = dayjs.unix(datestring);
       $('#valueOf').val(day.valueOf());
-      $('#date').val(day.format('YYYY-MM-DD HH:mm:ss'));
-
-      return false;
+      $('#date').val(day.format(formatString));
     });
+
     $('button.date').on('click', function () {
       $('#err').text('').hide();
+      setFormat();
+
       var datestring = $('#date').val();
       if (!dayjs(datestring).isValid()) {
         $('#valueOf').val("Invalid date");
         $('#unix').val("Invalid date");
         $('#err').text(datestring + "は有効な日付ではありません").show();
-        return false;
+        return;
       }
       var day = dayjs(datestring);
       $('#valueOf').val(day.valueOf());
       $('#unix').val(day.unix());
-      return false;
+      $('#date').val(day.format(formatString));
     });
 
     $('#reset-button').on('click', function () {
-      init();
+      $('#format').val("YYYY-MM-DD HH:mm:ss");
       $('#err').text('').hide();
-      return false;
+      init();
     });
   });
 </script>
