@@ -12,6 +12,11 @@
   <div class="container-fluid justify-content-start">
     <a class="navbar-brand" href="/">takemitsu.net</a>
     <div class="nav-text" id="fonts">10進数16進数変換</div>
+
+    <ul class="navbar-nav flex-row ms-auto mb-2 mb-lg-0">
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('dark')">dark</a></li>
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('light')">light</a></li>
+    </ul>
   </div>
 </nav>
 
@@ -46,6 +51,7 @@
 </div>
 
 <!-- script -->
+<script src="setTheme.mini.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
         integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
         crossorigin="anonymous"></script>
@@ -93,6 +99,8 @@
       $('#n16').val('');
       $('#err').text('').hide();
     });
+
+    changeTheme(getStoredTheme());
   });
 </script>
 </body>

@@ -12,6 +12,11 @@
   <div class="container-fluid justify-content-start">
     <a class="navbar-brand" href="/">takemitsu.net</a>
     <div class="nav-text" id="fonts">font-size</div>
+
+    <ul class="navbar-nav flex-row ms-auto mb-2 mb-lg-0">
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('dark')">dark</a></li>
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('light')">light</a></li>
+    </ul>
   </div>
 </nav>
 
@@ -39,7 +44,7 @@
     </div>
   </form>
 </div>
-
+<script src="setTheme.mini.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
         integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
         crossorigin="anonymous"></script>
@@ -50,49 +55,51 @@
         integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
 
 <script type="text/javascript">
-    $(function () {
-        var fsize = 36;
-        $('#btns button').on('click', function () {
-            inputsize = $(this).data('size');
-            fsize = parseInt(inputsize);
-            changeFontSize();
-            return false;
-        });
-        $('#bm').on('click', function () {
-            if (fsize > 6) {
-                fsize--;
-                changeFontSize();
-            }
-            return false;
-        });
-        $('#bp').on('click', function () {
-            fsize++;
-            changeFontSize();
-            return false;
-        });
-        $('#bm10').on('click', function () {
-            if (fsize - 10 > 6) {
-                fsize = fsize - 10;
-                changeFontSize();
-            } else {
-                fsize = 6;
-                changeFontSize();
-            }
-            return false;
-        });
-        $('#bp10').on('click', function () {
-            fsize = fsize + 10;
-            changeFontSize();
-            return false;
-        });
-
-        function changeFontSize() {
-            $('#str').css('font-size', fsize + 'px');
-            $('#fonts').text('font-size:' + fsize + 'px');
-        }
-
-        changeFontSize();
+  $(function () {
+    var fsize = 36;
+    $('#btns button').on('click', function () {
+      inputsize = $(this).data('size');
+      fsize = parseInt(inputsize);
+      changeFontSize();
+      return false;
     });
+    $('#bm').on('click', function () {
+      if (fsize > 6) {
+        fsize--;
+        changeFontSize();
+      }
+      return false;
+    });
+    $('#bp').on('click', function () {
+      fsize++;
+      changeFontSize();
+      return false;
+    });
+    $('#bm10').on('click', function () {
+      if (fsize - 10 > 6) {
+        fsize = fsize - 10;
+        changeFontSize();
+      } else {
+        fsize = 6;
+        changeFontSize();
+      }
+      return false;
+    });
+    $('#bp10').on('click', function () {
+      fsize = fsize + 10;
+      changeFontSize();
+      return false;
+    });
+
+    function changeFontSize() {
+      $('#str').css('font-size', fsize + 'px');
+      $('#fonts').text('font-size:' + fsize + 'px');
+    }
+
+    changeFontSize();
+
+    changeTheme(getStoredTheme());
+  });
 </script>
 </body>
 </html>
