@@ -5,3 +5,4 @@ function changeTheme(theme) {
   document.documentElement.setAttribute("data-bs-theme", theme);
   setStoredTheme(theme);
 }
+changeTheme(getStoredTheme());
