@@ -6,6 +6,41 @@
   <title>フォントサイズチェック</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@200..900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Hachi+Maru+Pop&family=Noto+Serif+JP:wght@200..900&display=swap"
+        rel="stylesheet">
+  <link
+      href="https://fonts.googleapis.com/css2?family=Hachi+Maru+Pop&family=Noto+Serif+JP:wght@200..900&family=Tsukimi+Rounded&display=swap"
+      rel="stylesheet">
+  <link
+      href="https://fonts.googleapis.com/css2?family=Hachi+Maru+Pop&family=M+PLUS+1:wght@100..900&family=Noto+Serif+JP:wght@200..900&family=Tsukimi+Rounded&display=swap"
+      rel="stylesheet">
+
+  <style type="text/css">
+      body {
+          font-family: "Noto Serif JP", serif;
+          font-optical-sizing: auto;
+          font-style: normal;
+      }
+
+      .tsukimi-rounded {
+          font-family: "Tsukimi Rounded", sans-serif;
+      }
+
+      .noto-serif-jp {
+          font-family: "Noto Serif JP", serif;
+      }
+
+      .hachi-maru-pop {
+          font-family: "Hachi Maru Pop", cursive;
+      }
+
+      .m-plus-1 {
+          font-family: "M PLUS 1", sans-serif;
+      }
+  </style>
 </head>
 <body>
 <nav class="navbar bg-body-tertiary" id="header" aria-label="header">
@@ -25,24 +60,31 @@
     <div class="form-group">
       <textarea class="form-control" rows="3" id="str" placeholder="ここに入力する感じで"></textarea>
     </div>
-
-    <div class="btn-group mt-3" role="group" id="btns">
-      <button type="button" data-size="12" class="btn btn-secondary">12px</button>
-      <button type="button" data-size="24" class="btn btn-secondary">24px</button>
-      <button type="button" data-size="36" class="btn btn-secondary">36px</button>
-      <button type="button" data-size="48" class="btn btn-secondary">48px</button>
-      <button type="button" data-size="72" class="btn btn-secondary">72px</button>
-      <button type="button" data-size="120" class="btn btn-secondary">120px</button>
-    </div>
-    <div class="btn-group mt-3">
-      <button class="btn btn-danger" style="width:40px;" id="bm"> -</button>
-      <button class="btn btn-primary" style="width:40px;" id="bp"> +</button>
-    </div>
-    <div class="btn-group mt-3">
-      <button class="btn btn-danger" id="bm10"> -10px</button>
-      <button class="btn btn-primary" id="bp10"> +10px</button>
-    </div>
   </form>
+  <div class="btn-group mt-3" role="group" id="btns">
+    <button type="button" data-size="12" class="btn btn-secondary">12px</button>
+    <button type="button" data-size="24" class="btn btn-secondary">24px</button>
+    <button type="button" data-size="36" class="btn btn-secondary">36px</button>
+    <button type="button" data-size="48" class="btn btn-secondary">48px</button>
+    <button type="button" data-size="72" class="btn btn-secondary">72px</button>
+    <button type="button" data-size="120" class="btn btn-secondary">120px</button>
+  </div>
+  <div class="btn-group mt-3">
+    <button class="btn btn-danger" style="width:40px;" id="bm"> -</button>
+    <button class="btn btn-primary" style="width:40px;" id="bp"> +</button>
+  </div>
+  <div class="btn-group mt-3">
+    <button class="btn btn-danger" id="bm10"> -10px</button>
+    <button class="btn btn-primary" id="bp10"> +10px</button>
+  </div>
+  <div>
+    <p class="mb-0 mt-3">font-family:</p>
+    <button class="font-family m-1 btn btn-success noto-serif-jp">Noto Serif Japanese</button>
+    <button class="font-family m-1 btn btn-success tsukimi-rounded">Tsukimi Rounded</button>
+    <button class="font-family m-1 btn btn-success hachi-maru-pop">Hachi Maru Pop</button>
+    <button class="font-family m-1 btn btn-success m-plus-1">M PLUS 1</button>
+  </div>
+
 </div>
 <script src="setTheme.mini.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
@@ -97,6 +139,10 @@
     }
 
     changeFontSize();
+
+    $("button.font-family").on('click', function () {
+      $('body').css(`font-family`, $(this).css('font-family'))
+    })
   });
 </script>
 </body>
