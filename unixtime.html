@@ -42,7 +42,7 @@
 
     <div class="input-group mt-3">
       <span class="input-group-text" style="width: 110px">output format</span>
-      <input id="format" type="text" class="form-control " style="max-width: 250px;" value=""/>
+      <input id="format" type="text" class="form-control " style="max-width: 308px;" value=""/>
     </div>
 
     <div class="btn-group mt-3">
@@ -77,7 +77,7 @@
     function setFormat() {
       var tempFormatString = $('#format').val()
       if (!tempFormatString) {
-        formatString = "YYYY-MM-DD HH:mm:ss";
+        formatString = "YYYY-MM-DD HH:mm:ssZ[Z]";
         $('#format').val(formatString);
       } else {
         formatString = tempFormatString;
