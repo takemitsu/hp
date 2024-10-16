@@ -35,9 +35,15 @@
     </div>
 
     <div class="input-group mt-3">
-      <span class="input-group-text" style="width: 110px">formated</span>
+      <span class="input-group-text" style="width: 110px">formated local</span>
       <input id="date" type="text" class="form-control " style="max-width: 250px;" value=""/>
       <button type="button" class="btn btn-primary date">実行</button>
+    </div>
+
+    <div class="input-group mt-3">
+      <span class="input-group-text" style="width: 110px">formated UTC</span>
+      <input id="utc" type="text" class="form-control " style="max-width: 250px;" value=""/>
+      <span class="input-group-text" style="width:58px">UTC</span>
     </div>
 
     <div class="input-group mt-3">
@@ -67,17 +73,19 @@
         integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dayjs@1/locale/ja.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/utc.js"></script>
 
 <script type="text/javascript">
   $(function () {
     dayjs.locale('ja');
+    dayjs.extend(dayjs_plugin_utc);
     var now = dayjs();
     var formatString
 
     function setFormat() {
       var tempFormatString = $('#format').val()
       if (!tempFormatString) {
-        formatString = "YYYY-MM-DD HH:mm:ssZ[Z]";
+        formatString = "YYYY-MM-DD HH:mm:ss";
         $('#format').val(formatString);
       } else {
         formatString = tempFormatString;
@@ -90,6 +98,7 @@
       $('#valueOf').val(now.valueOf());
       $('#unix').val(now.unix());
       $('#date').val(now.format(formatString));
+      $('#utc').val(now.utc().format(formatString));
     }
 
     init();
@@ -102,6 +111,7 @@
       if (!dayjs(parseInt(datestring, 10)).isValid()) {
         $('#unix').val("Invalid date");
         $('#date').val("Invalid date");
+        $('#utc').val("Invalid date");
         $('#err').text(datestring + "は有効な数字ではありません").show();
         return;
       }
@@ -119,6 +129,7 @@
       if (!dayjs(parseInt(datestring, 10)).isValid()) {
         $('#valueOf').val("Invalid date");
         $('#date').val("Invalid date");
+        $('#utc').val("Invalid date");
         $('#err').text(datestring + "は有効な数字ではありません").show();
         return;
       }
@@ -126,6 +137,7 @@
       var day = dayjs.unix(datestring);
       $('#valueOf').val(day.valueOf());
       $('#date').val(day.format(formatString));
+      $('#utc').val(day.utc().format(formatString));
     });
 
     $('button.date').on('click', function () {
@@ -136,6 +148,7 @@
       if (!dayjs(datestring).isValid()) {
         $('#valueOf').val("Invalid date");
         $('#unix').val("Invalid date");
+        $('#utc').val("Invalid date");
         $('#err').text(datestring + "は有効な日付ではありません").show();
         return;
       }
@@ -143,6 +156,7 @@
       $('#valueOf').val(day.valueOf());
       $('#unix').val(day.unix());
       $('#date').val(day.format(formatString));
+      $('#utc').val(day.utc().format(formatString));
     });
 
     $('#reset-button').on('click', function () {
