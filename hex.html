@@ -6,6 +6,20 @@
   <title>10進数16進数変換</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    @media (max-width: 576px) {
+      .form-label-custom {
+        font-size: 0.875rem;
+        white-space: nowrap;
+      }
+    }
+  </style>
 </head>
 <body>
 <nav class="navbar bg-body-tertiary" id="header" aria-label="header">
@@ -22,31 +36,51 @@
 
 <div class="container mt-3">
   <form class="form" role="form">
-    <div class="row g-2">
-      <div class="col-auto"><label for="n10" class="align-middle" style="width: 60px;">10進数:</label></div>
-      <div class="col-auto"><input id="n10" type="text" class="form-control " value=""/></div>
-      <div class="col-auto">
-        <button type="button" class="btn btn-primary n10">実行</button>
-      </div>
+    <div class="input-group mb-2" style="max-width: 400px;">
+      <span class="input-group-text form-label-custom" style="min-width: 85px;">10進数:</span>
+      <input id="n10" type="text" class="form-control" value=""/>
+      <button type="button" class="btn btn-primary n10">実行</button>
     </div>
-    <div class="row g-2 mt-2">
-      <div class="col-auto"><label for="n02" class="align-middle" style="width: 60px;">2進数:</label></div>
-      <div class="col-auto"><input id="n02" type="text" class="form-control " value=""/></div>
-      <div class="col-auto">
-        <button type="button" class="btn btn-primary n02">実行</button>
-      </div>
+    <div class="input-group mb-2" style="max-width: 400px;">
+      <span class="input-group-text form-label-custom" style="min-width: 85px;">2進数:</span>
+      <input id="n02" type="text" class="form-control" value=""/>
+      <button type="button" class="btn btn-primary n02">実行</button>
     </div>
-    <div class="row g-2 mt-2">
-      <div class="col-auto"><label for="n16" class="align-middle" style="width: 60px;">16進数:</label></div>
-      <div class="col-auto"><input id="n16" type="text" class="form-control " value=""/></div>
-      <div class="col-auto">
-        <button type="button" class="btn btn-primary n16">実行</button>
-      </div>
+    <div class="input-group mb-2" style="max-width: 400px;">
+      <span class="input-group-text form-label-custom" style="min-width: 85px;">16進数:</span>
+      <input id="n16" type="text" class="form-control" value=""/>
+      <button type="button" class="btn btn-primary n16">実行</button>
     </div>
     <div class="btn-group mt-3">
       <button type="button" class="btn btn-secondary" id="reset-button">クリア</button>
     </div>
     <div id="err" class="alert alert-danger mt-3" style="display: none;" role="alert"></div>
+  </form>
+
+  <hr class="my-5">
+  
+  <h5 class="mb-3">RGB変換</h5>
+  <form class="form" role="form">
+    <div class="input-group mb-2" style="max-width: 400px;">
+      <span class="input-group-text" style="min-width: 85px;">10進数</span>
+      <input id="rgb-r-dec" type="text" class="form-control text-center" placeholder="R" value="255" style="max-width: 70px;"/>
+      <input id="rgb-g-dec" type="text" class="form-control text-center" placeholder="G" value="255" style="max-width: 70px;"/>
+      <input id="rgb-b-dec" type="text" class="form-control text-center" placeholder="B" value="255" style="max-width: 70px;"/>
+      <button type="button" class="btn btn-primary" id="rgb-dec-btn">変換</button>
+    </div>
+    <div class="input-group mb-2" style="max-width: 400px;">
+      <span class="input-group-text" style="min-width: 85px;">16進数</span>
+      <input id="rgb-r-hex" type="text" class="form-control text-center" placeholder="R" value="ff" style="max-width: 70px;"/>
+      <input id="rgb-g-hex" type="text" class="form-control text-center" placeholder="G" value="ff" style="max-width: 70px;"/>
+      <input id="rgb-b-hex" type="text" class="form-control text-center" placeholder="B" value="ff" style="max-width: 70px;"/>
+      <button type="button" class="btn btn-primary" id="rgb-hex-btn">変換</button>
+    </div>
+    <div class="input-group mb-2" style="max-width: 400px;">
+      <span class="input-group-text" style="min-width: 85px;">RGB</span>
+      <input id="rgb-full" type="text" class="form-control text-center" placeholder="FFFFFF" value="ffffff" style="max-width: 120px;"/>
+      <button type="button" class="btn btn-primary" id="rgb-full-btn">変換</button>
+    </div>
+    <div id="rgb-err" class="alert alert-danger mt-3" style="display: none;" role="alert"></div>
   </form>
 </div>
 
@@ -98,6 +132,97 @@
       $('#n02').val('');
       $('#n16').val('');
       $('#err').text('').hide();
+    });
+
+    // RGB変換
+    $('#rgb-dec-btn').on('click', function () {
+      $('#rgb-err').text('').hide();
+      try {
+        const r = parseInt($('#rgb-r-dec').val(), 10);
+        const g = parseInt($('#rgb-g-dec').val(), 10);
+        const b = parseInt($('#rgb-b-dec').val(), 10);
+        
+        if (isNaN(r) || isNaN(g) || isNaN(b)) {
+          throw new Error('有効な数値を入力してください');
+        }
+        if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
+          throw new Error('値は0-255の範囲で入力してください');
+        }
+        
+        const rHex = r.toString(16).padStart(2, '0');
+        const gHex = g.toString(16).padStart(2, '0');
+        const bHex = b.toString(16).padStart(2, '0');
+        
+        $('#rgb-r-hex').val(rHex);
+        $('#rgb-g-hex').val(gHex);
+        $('#rgb-b-hex').val(bHex);
+        $('#rgb-full').val(rHex + gHex + bHex);
+      } catch (e) {
+        $('#rgb-err').text(e.message).show();
+      }
+      return false;
+    });
+
+    $('#rgb-hex-btn').on('click', function () {
+      $('#rgb-err').text('').hide();
+      try {
+        const rHex = $('#rgb-r-hex').val();
+        const gHex = $('#rgb-g-hex').val();
+        const bHex = $('#rgb-b-hex').val();
+        
+        const r = parseInt(rHex, 16);
+        const g = parseInt(gHex, 16);
+        const b = parseInt(bHex, 16);
+        
+        if (isNaN(r) || isNaN(g) || isNaN(b)) {
+          throw new Error('有効な16進数を入力してください');
+        }
+        if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
+          throw new Error('値は00-ffの範囲で入力してください');
+        }
+        
+        $('#rgb-r-dec').val(r.toString(10));
+        $('#rgb-g-dec').val(g.toString(10));
+        $('#rgb-b-dec').val(b.toString(10));
+        $('#rgb-full').val(rHex.padStart(2, '0') + gHex.padStart(2, '0') + bHex.padStart(2, '0'));
+      } catch (e) {
+        $('#rgb-err').text(e.message).show();
+      }
+      return false;
+    });
+
+    $('#rgb-full-btn').on('click', function () {
+      $('#rgb-err').text('').hide();
+      try {
+        let hex = $('#rgb-full').val().trim();
+        // #を除去
+        hex = hex.replace(/^#/, '');
+        
+        if (hex.length !== 6) {
+          throw new Error('6文字の16進数を入力してください（例: FFFFFF）');
+        }
+        
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        
+        if (isNaN(r) || isNaN(g) || isNaN(b)) {
+          throw new Error('有効な16進数を入力してください');
+        }
+        
+        // 10進数フィールドに設定
+        $('#rgb-r-dec').val(r.toString(10));
+        $('#rgb-g-dec').val(g.toString(10));
+        $('#rgb-b-dec').val(b.toString(10));
+        
+        // 16進数フィールドに設定
+        $('#rgb-r-hex').val(hex.substring(0, 2));
+        $('#rgb-g-hex').val(hex.substring(2, 4));
+        $('#rgb-b-hex').val(hex.substring(4, 6));
+      } catch (e) {
+        $('#rgb-err').text(e.message).show();
+      }
+      return false;
     });
   });
 </script>
