@@ -35,3 +35,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## デプロイ
 
 Sakura VPSのnginxでホスティング。手動でgit pullしてデプロイ。
+
+```bash
+git pull
+sudo cp -r . /var/www/html/ --exclude='.git*' --exclude='*.md'
+```
