@@ -49,6 +49,10 @@
       font-size: 1.1rem;
       font-weight: bold;
     }
+    .tenkey-btn:active {
+      transform: scale(0.95);
+      transition: transform 0.1s;
+    }
     @media (max-width: 576px) {
       .problem-display {
         font-size: 1.5rem;
@@ -280,6 +284,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // ボタンのフォーカスを削除（押された状態を解除）
     button.blur();
+    
+    // スマホでのactive状態を強制的に解除
+    setTimeout(() => {
+      button.classList.remove('active');
+      button.style.transform = '';
+    }, 100);
     
     if (button.dataset.number) {
       inputNumber(parseInt(button.dataset.number));
