@@ -38,5 +38,5 @@ Sakura VPSのnginxでホスティング。手動でgit pullしてデプロイ。
 
 ```bash
 git pull
-sudo cp -r . /var/www/html/ --exclude='.git*' --exclude='*.md'
+sudo rsync -av --exclude='.git*' --exclude='*.md' . /var/www/html/
 ```
