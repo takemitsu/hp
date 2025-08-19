@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>じゃんけん連勝チャレンジ</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .hand-btn {
+      font-size: 4rem;
+      min-height: 120px;
+      min-width: 120px;
+      border-radius: 50%;
+      margin: 10px;
+      transition: transform 0.1s;
+    }
+    .hand-btn:active {
+      transform: scale(0.95);
+    }
+    .vs-display {
+      font-size: 3rem;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .win-streak {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--bs-success);
+    }
+    .message-area {
+      min-height: 80px;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .result-display {
+      font-size: 1.5rem;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .game-over {
+      color: var(--bs-danger);
+      font-weight: bold;
+    }
+    .game-clear {
+      color: var(--bs-warning);
+      font-weight: bold;
+    }
+    @media (max-width: 576px) {
+      .hand-btn {
+        font-size: 3rem;
+        min-height: 100px;
+        min-width: 100px;
+        margin: 5px;
+      }
+      .vs-display {
+        font-size: 2.5rem;
+        min-height: 100px;
+      }
+      .win-streak {
+        font-size: 1.5rem;
+      }
+      .message-area {
+        font-size: 1rem;
+        min-height: 60px;
+      }
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar bg-body-tertiary" id="header" aria-label="header">
+  <div class="container-fluid justify-content-start">
+    <a class="navbar-brand" href="/">takemitsu.net</a>
+    <div class="nav-text" id="fonts">じゃんけん連勝チャレンジ</div>
+
+    <ul class="navbar-nav flex-row ms-auto mb-2 mb-lg-0">
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('dark')">dark</a></li>
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('light')">light</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container mt-3">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+      
+      <!-- ゲーム説明 -->
+      <div class="card mb-4" id="intro-panel">
+        <div class="card-body text-center">
+          <h3 class="mb-3">じゃんけん連勝チャレンジ</h3>
+          <p class="mb-3">コンピューターに連続で勝てるかな？<br>1回でも負けたらゲームオーバーです！</p>
+          
+          <div class="mb-4">
+            <h5 class="mb-3">難易度を選択してください</h5>
+            <div class="d-grid gap-2 d-md-block">
+              <button class="btn btn-success btn-lg mx-1" onclick="startGame(3)">
+                イージー<br><small>3連勝でクリア</small>
+              </button>
+              <button class="btn btn-warning btn-lg mx-1" onclick="startGame(5)">
+                ノーマル<br><small>5連勝でクリア</small>
+              </button>
+              <button class="btn btn-danger btn-lg mx-1" onclick="startGame(10)">
+                ハード<br><small>10連勝でクリア</small>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ゲーム画面 -->
+      <div class="card" id="game-panel" style="display: none;">
+        <div class="card-body">
+          
+          <!-- 連勝数表示 -->
+          <div class="text-center mb-3">
+            <div class="win-streak">連勝数: <span id="win-count">0</span> / <span id="target-wins">10</span></div>
+          </div>
+
+          <!-- メッセージエリア -->
+          <div class="message-area mb-3" id="message-area">
+            がんばって！
+          </div>
+
+          <!-- 対戦表示 -->
+          <div class="row justify-content-center align-items-center mb-3">
+            <div class="col-4 text-center">
+              <div class="text-muted">あなた</div>
+              <div class="vs-display" id="player-hand">❓</div>
+            </div>
+            <div class="col-4 text-center">
+              <div class="h4 mb-0">VS</div>
+            </div>
+            <div class="col-4 text-center">
+              <div class="text-muted">コンピューター</div>
+              <div class="vs-display" id="computer-hand">❓</div>
+            </div>
+          </div>
+
+          <!-- 結果表示 -->
+          <div class="result-display mb-3" id="result-display">
+            手を選んでください
+          </div>
+
+          <!-- じゃんけんボタン -->
+          <div class="text-center mb-3">
+            <button class="btn btn-outline-primary hand-btn" onclick="playJanken('rock')" id="btn-rock">✊</button>
+            <button class="btn btn-outline-primary hand-btn" onclick="playJanken('paper')" id="btn-paper">🖐️</button>
+            <button class="btn btn-outline-primary hand-btn" onclick="playJanken('scissors')" id="btn-scissors">✌️</button>
+          </div>
+
+          <div class="text-center">
+            <small class="text-muted">グー / パー / チョキ</small>
+          </div>
+
+          <!-- リセットボタン -->
+          <div class="text-center mt-3">
+            <button class="btn btn-secondary" onclick="resetGame()">リセット</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 結果画面 -->
+      <div class="card" id="result-panel" style="display: none;">
+        <div class="card-body text-center">
+          <div id="final-message" class="mb-4"></div>
+          <div class="d-grid gap-2">
+            <button class="btn btn-primary" onclick="startGame(gameState ? gameState.targetWins : 10)">同じ難易度でもう一度！</button>
+            <button class="btn btn-secondary" onclick="showIntro()">難易度選択に戻る</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="setTheme.mini.js"></script>
+<script>
+// ゲーム状態
+let gameState = {
+  isPlaying: false,
+  winCount: 0,
+  targetWins: 10,
+  playerChoice: null,
+  computerChoice: null
+};
+
+// じゃんけんの手の表示
+const handDisplay = {
+  rock: '✊',
+  paper: '🖐️',
+  scissors: '✌️'
+};
+
+// じゃんけんの手の名前
+const handName = {
+  rock: 'グー',
+  paper: 'パー',
+  scissors: 'チョキ'
+};
+
+// 連勝中のメッセージ（複数パターン）
+const winMessages = [
+  ['がんばって！', 'さあ、始めよう！', 'まずは1勝から！'], // 0連勝
+  ['いい調子！', 'やるじゃん！', 'まずは1勝！'], // 1連勝
+  ['調子に乗るな...', '2連勝！', 'まだまだ序盤だよ'], // 2連勝
+  ['まだまだ序盤！', '3連勝達成！', 'この調子で！'], // 3連勝
+  ['だんだん緊張してきた...', '4連勝！すごいね', 'ちょっとドキドキ...'], // 4連勝
+  ['手に汗が...', '5連勝！半分だ！', 'まじですごいな...'], // 5連勝
+  ['ちょっと怖くなってきた...', '6連勝！すげぇ...', '緊張してきたぞ...'], // 6連勝
+  ['あと少し！頑張って！', '7連勝！すごすぎる！', 'ドキドキが止まらない！'], // 7連勝
+  ['心臓がバクバク！', '8連勝！やばすぎる！', '手が震えてる...'], // 8連勝
+  ['あと1勝！震えが止まらない...', '9連勝！！！あと1つ！', '伝説まであと1勝！'], // 9連勝
+];
+
+// 敗北時のメッセージ（複数パターン）
+const loseMessages = [
+  ['まだまだ！もう一回！', 'ドンマイ！', '次は頑張ろう！'], // 0連勝で敗北
+  ['まだまだ！もう一回！', '1敗でリセット...', 'まだ序盤だから！'], // 1連勝で敗北
+  ['まだまだ！もう一回！', '2連勝でストップ...', 'もう少しだったのに'], // 2連勝で敗北
+  ['ちょっと惜しい！3連勝でした', '3連勝で終了...', 'なかなかやるじゃん'], // 3連勝で敗北
+  ['惜しい！4連勝でした。あと少しだったのに...', '4連勝でストップ！', '悔しいなぁ...'], // 4連勝で敗北
+  ['悔しい！5連勝で終了...！', '5連勝でゲームオーバー！', 'なかなかいい線いってたのに...'], // 5連勝で敗北
+  ['うわあああ！6連勝で終了...！悔しい！', '6連勝でストップ...！', 'ここまで来たのに...！'], // 6連勝で敗北
+  ['あああああ！7連勝で終了...！もう少しだったのに！', '7連勝でゲームオーバー...！', 'こんなところで...！'], // 7連勝で敗北
+  ['うそでしょ！？8連勝で終了...！心が折れる...', '8連勝で万事休す...', 'あと2つだったのに...！'], // 8連勝で敗北
+  ['9連勝であと1勝だったのに...！悔しすぎる...！', 'あと1勝で伝説だったのに...！', '9連勝で終了...無念...'], // 9連勝で敗北
+];
+
+// ランダムメッセージ取得
+function getRandomMessage(messages, winCount) {
+  const messageArray = messages[winCount];
+  return messageArray[Math.floor(Math.random() * messageArray.length)];
+}
+
+// ゲーム開始
+function startGame(targetWins = 10) {
+  // 入力値検証
+  if (typeof targetWins !== 'number' || targetWins < 1 || targetWins > 50) {
+    console.warn('Invalid targetWins value:', targetWins);
+    targetWins = 10; // デフォルト値を使用
+  }
+  
+  gameState = {
+    isPlaying: true,
+    winCount: 0,
+    targetWins: targetWins,
+    playerChoice: null,
+    computerChoice: null
+  };
+  
+  // UI切り替え
+  document.getElementById('intro-panel').style.display = 'none';
+  document.getElementById('game-panel').style.display = 'block';
+  document.getElementById('result-panel').style.display = 'none';
+  
+  // 初期表示
+  updateDisplay();
+}
+
+// 表示更新
+function updateDisplay() {
+  // DOM要素の存在チェック
+  const elements = {
+    winCount: document.getElementById('win-count'),
+    targetWins: document.getElementById('target-wins'),
+    messageArea: document.getElementById('message-area'),
+    playerHand: document.getElementById('player-hand'),
+    computerHand: document.getElementById('computer-hand'),
+    resultDisplay: document.getElementById('result-display')
+  };
+  
+  // 必要な要素が存在しない場合のエラーハンドリング
+  for (const [key, element] of Object.entries(elements)) {
+    if (!element) {
+      console.error(`Element not found: ${key}`);
+      return;
+    }
+  }
+  
+  elements.winCount.textContent = gameState.winCount || 0;
+  elements.targetWins.textContent = gameState.targetWins || 10;
+  
+  // メッセージは連勝数に応じて（最大9まで）
+  const messageIndex = Math.min(gameState.winCount || 0, winMessages.length - 1);
+  elements.messageArea.textContent = getRandomMessage(winMessages, messageIndex);
+  
+  // 手の表示をリセット
+  elements.playerHand.textContent = '❓';
+  elements.computerHand.textContent = '❓';
+  elements.resultDisplay.textContent = '手を選んでください';
+  
+  // ボタンを有効化
+  enableButtons(true);
+}
+
+// じゃんけん実行
+function playJanken(playerChoice) {
+  if (!gameState.isPlaying) return;
+  
+  gameState.playerChoice = playerChoice;
+  gameState.computerChoice = getComputerChoice();
+  
+  // ボタンを無効化
+  enableButtons(false);
+  
+  // 手を表示
+  document.getElementById('player-hand').textContent = handDisplay[playerChoice];
+  document.getElementById('computer-hand').textContent = handDisplay[gameState.computerChoice];
+  
+  // 結果判定
+  const result = judgeResult(playerChoice, gameState.computerChoice);
+  
+  // 結果表示
+  setTimeout(() => {
+    showResult(result);
+  }, 1000);
+}
+
+// コンピューターの手を選択
+function getComputerChoice() {
+  const choices = ['rock', 'paper', 'scissors'];
+  return choices[Math.floor(Math.random() * choices.length)];
+}
+
+// 勝敗判定
+function judgeResult(player, computer) {
+  if (player === computer) {
+    return 'draw';
+  }
+  
+  const winConditions = {
+    rock: 'scissors',
+    paper: 'rock',
+    scissors: 'paper'
+  };
+  
+  return winConditions[player] === computer ? 'win' : 'lose';
+}
+
+// 結果表示
+function showResult(result) {
+  const resultDisplay = document.getElementById('result-display');
+  const playerName = handName[gameState.playerChoice];
+  const computerName = handName[gameState.computerChoice];
+  
+  if (result === 'win') {
+    gameState.winCount++;
+    resultDisplay.innerHTML = `<span class="text-success">勝ち！</span><br><small>${playerName} vs ${computerName}</small>`;
+    
+    // 目標連勝数到達チェック
+    if (gameState.winCount >= gameState.targetWins) {
+      setTimeout(() => {
+        gameWin();
+      }, 1500);
+    } else {
+      // 次のラウンドへ
+      setTimeout(() => {
+        updateDisplay();
+      }, 2000);
+    }
+  } else if (result === 'lose') {
+    resultDisplay.innerHTML = `<span class="text-danger">負け...</span><br><small>${playerName} vs ${computerName}</small>`;
+    setTimeout(() => {
+      gameOver();
+    }, 1500);
+  } else {
+    resultDisplay.innerHTML = `<span class="text-warning">あいこ</span><br><small>${playerName} vs ${computerName}</small>`;
+    // あいこの場合はやり直し
+    setTimeout(() => {
+      updateDisplay();
+    }, 2000);
+  }
+}
+
+// ゲームオーバー
+function gameOver() {
+  gameState.isPlaying = false;
+  
+  const winCount = gameState.winCount || 0;
+  const finalMessage = `
+    <h3 class="game-over">ゲームオーバー</h3>
+    <p class="mb-3">${getRandomMessage(loseMessages, winCount)}</p>
+    <div class="h5">最終記録: ${winCount}連勝</div>
+  `;
+  
+  const finalMessageElement = document.getElementById('final-message');
+  if (finalMessageElement) {
+    finalMessageElement.innerHTML = finalMessage;
+  } else {
+    console.error('final-message element not found');
+  }
+  
+  const gamePanel = document.getElementById('game-panel');
+  const resultPanel = document.getElementById('result-panel');
+  
+  if (gamePanel && resultPanel) {
+    gamePanel.style.display = 'none';
+    resultPanel.style.display = 'block';
+  } else {
+    console.error('Game panels not found');
+  }
+}
+
+// ゲームクリア
+function gameWin() {
+  gameState.isPlaying = false;
+  
+  const targetWins = gameState.targetWins || 10;
+  const difficultyName = {
+    3: 'イージー',
+    5: 'ノーマル', 
+    10: 'ハード'
+  }[targetWins] || `${targetWins}連勝`;
+  
+  const finalMessage = `
+    <h3 class="game-clear">🎉 ${targetWins}連勝達成！ 🎉</h3>
+    <p class="mb-3">おめでとう！${difficultyName}モードクリア！<br>${targetWins === 10 ? '伝説を達成しました！' : 'すごいです！'}</p>
+    <div class="h5 text-success">完全勝利: ${targetWins}連勝</div>
+  `;
+  
+  const finalMessageElement = document.getElementById('final-message');
+  if (finalMessageElement) {
+    finalMessageElement.innerHTML = finalMessage;
+  } else {
+    console.error('final-message element not found');
+  }
+  
+  const gamePanel = document.getElementById('game-panel');
+  const resultPanel = document.getElementById('result-panel');
+  
+  if (gamePanel && resultPanel) {
+    gamePanel.style.display = 'none';
+    resultPanel.style.display = 'block';
+  } else {
+    console.error('Game panels not found');
+  }
+}
+
+// ボタンの有効/無効切り替え
+function enableButtons(enabled) {
+  const buttons = ['btn-rock', 'btn-paper', 'btn-scissors'];
+  buttons.forEach(buttonId => {
+    const button = document.getElementById(buttonId);
+    if (button) {
+      button.disabled = !enabled;
+    } else {
+      console.warn('Button not found:', buttonId);
+    }
+  });
+}
+
+// ゲームリセット
+function resetGame() {
+  if (!gameState.isPlaying) {
+    startGame();
+    return;
+  }
+  
+  if (confirm('ゲームをリセットしますか？')) {
+    startGame();
+  }
+}
+
+// イントロ画面に戻る
+function showIntro() {
+  if (gameState) {
+    gameState.isPlaying = false;
+  }
+  
+  const panels = ['intro-panel', 'game-panel', 'result-panel'];
+  const visibility = ['block', 'none', 'none'];
+  
+  panels.forEach((panelId, index) => {
+    const panel = document.getElementById(panelId);
+    if (panel) {
+      panel.style.display = visibility[index];
+    } else {
+      console.error(`Panel not found: ${panelId}`);
+    }
+  });
+}
+
+// ボタンのactive状態解除（スマホ対応）
+document.addEventListener('DOMContentLoaded', function() {
+  const handButtons = document.querySelectorAll('.hand-btn');
+  handButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      this.blur();
+      setTimeout(() => {
+        this.classList.remove('active');
+        this.style.transform = '';
+      }, 100);
+    });
+  });
+});
+</script>
+</body>
+</html>
