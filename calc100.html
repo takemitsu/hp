@@ -278,6 +278,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const button = e.target.closest('button');
     if (!button) return;
     
+    // ボタンのフォーカスを削除（押された状態を解除）
+    button.blur();
+    
     if (button.dataset.number) {
       inputNumber(parseInt(button.dataset.number));
     } else if (button.dataset.action === 'clear') {
