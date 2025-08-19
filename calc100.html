@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>100マス計算もどき</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .problem-display {
+      font-size: 2rem;
+      font-weight: bold;
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .answer-input {
+      font-size: 1.5rem;
+      text-align: center;
+      width: 120px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .result-correct {
+      color: var(--bs-success);
+    }
+    .result-incorrect {
+      color: var(--bs-danger);
+    }
+    .settings-panel {
+      background-color: var(--bs-secondary-bg-subtle);
+      border-radius: 0.375rem;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .tenkey-btn {
+      min-height: 50px;
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+    @media (max-width: 576px) {
+      .problem-display {
+        font-size: 1.5rem;
+        min-height: 60px;
+      }
+      .answer-input {
+        font-size: 1.2rem;
+        width: 100px;
+      }
+      .tenkey-btn {
+        min-height: 45px;
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar bg-body-tertiary" id="header" aria-label="header">
+  <div class="container-fluid justify-content-start">
+    <a class="navbar-brand" href="/">takemitsu.net</a>
+    <div class="nav-text" id="fonts">100マス計算もどき</div>
+
+    <ul class="navbar-nav flex-row ms-auto mb-2 mb-lg-0">
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('dark')">dark</a></li>
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('light')">light</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container mt-3">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+      
+      <!-- 設定パネル -->
+      <div class="settings-panel" id="settings-panel">
+        <h5 class="mb-3">設定</h5>
+        
+        <div class="row mb-3">
+          <div class="col-sm-6">
+            <label class="form-label">問題数</label>
+            <select class="form-select" id="problem-count">
+              <option value="20">20問</option>
+              <option value="50">50問</option>
+              <option value="100" selected>100問</option>
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">演算</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="+" id="op-add" checked>
+              <label class="form-check-label" for="op-add">足し算 (+)</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="-" id="op-sub">
+              <label class="form-check-label" for="op-sub">引き算 (-)</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="*" id="op-mul">
+              <label class="form-check-label" for="op-mul">掛け算 (×)</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="/" id="op-div">
+              <label class="form-check-label" for="op-div">割り算 (÷)</label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="d-grid">
+          <button class="btn btn-primary" onclick="startGame()">ゲーム開始</button>
+        </div>
+      </div>
+
+      <!-- ゲーム画面 -->
+      <div class="card" id="game-panel" style="display: none;">
+        <div class="card-body text-center">
+          
+          <!-- 進捗表示 -->
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span>問題 <span id="current-problem">1</span> / <span id="total-problems">100</span></span>
+              <span>時間: <span id="timer">00:00</span></span>
+            </div>
+            <div class="progress">
+              <div class="progress-bar" id="progress-bar" role="progressbar" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- 問題表示 -->
+          <div class="problem-display" id="problem-display">
+            <span id="problem-text">準備中...</span>
+          </div>
+
+          <!-- 答え入力と結果表示 -->
+          <div class="row justify-content-center align-items-center mb-3">
+            <div class="col-auto">
+              <input type="number" class="form-control answer-input" id="answer-input" 
+                     placeholder="答えを入力" autocomplete="off" disabled style="width: 120px;">
+            </div>
+            <div class="col-auto">
+              <div id="result-display" style="min-height: 30px; min-width: 120px;">
+                <!-- 正解/不正解の表示 -->
+              </div>
+            </div>
+          </div>
+
+          <!-- テンキー -->
+          <div class="row justify-content-center mb-3">
+            <div class="col-auto">
+              <div class="d-grid" style="grid-template-columns: repeat(3, 70px); gap: 8px;" id="tenkey-grid">
+                <button class="btn btn-outline-secondary tenkey-btn" data-number="7">7</button>
+                <button class="btn btn-outline-secondary tenkey-btn" data-number="8">8</button>
+                <button class="btn btn-outline-secondary tenkey-btn" data-number="9">9</button>
+                <button class="btn btn-outline-secondary tenkey-btn" data-number="4">4</button>
+                <button class="btn btn-outline-secondary tenkey-btn" data-number="5">5</button>
+                <button class="btn btn-outline-secondary tenkey-btn" data-number="6">6</button>
+                <button class="btn btn-outline-secondary tenkey-btn" data-number="1">1</button>
+                <button class="btn btn-outline-secondary tenkey-btn" data-number="2">2</button>
+                <button class="btn btn-outline-secondary tenkey-btn" data-number="3">3</button>
+                <button class="btn btn-outline-secondary tenkey-btn" data-number="0" style="grid-column: span 2;">0</button>
+                <button class="btn btn-outline-danger tenkey-btn" data-action="clear">C</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 統計情報 -->
+          <div class="stats-grid">
+            <div class="card">
+              <div class="card-body text-center p-2">
+                <div class="h4 mb-1" id="correct-count">0</div>
+                <small>正解</small>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-body text-center p-2">
+                <div class="h4 mb-1" id="incorrect-count">0</div>
+                <small>不正解</small>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-body text-center p-2">
+                <div class="h4 mb-1" id="accuracy">0%</div>
+                <small>正解率</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <button class="btn btn-secondary" onclick="endGame()">終了</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 結果画面 -->
+      <div class="card" id="result-panel" style="display: none;">
+        <div class="card-body text-center">
+          <h3 class="mb-4">結果</h3>
+          
+          <div class="stats-grid mb-4">
+            <div class="card">
+              <div class="card-body text-center">
+                <div class="h3 mb-1" id="final-time">00:00</div>
+                <small>総時間</small>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-body text-center">
+                <div class="h3 mb-1" id="final-correct">0</div>
+                <small>正解数</small>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-body text-center">
+                <div class="h3 mb-1" id="final-accuracy">0%</div>
+                <small>正解率</small>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-body text-center">
+                <div class="h3 mb-1" id="avg-time">0.0</div>
+                <small>平均時間/問</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-grid gap-2">
+            <button class="btn btn-primary" onclick="showSettings()">もう一度</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="setTheme.mini.js"></script>
+<script>
+// 定数定義
+const CONFIG = {
+  MAX_INPUT_DIGITS: 2,
+  NUMBER_MIN: 1,
+  NUMBER_MAX: 9,
+  DELAY_CHECK_ANSWER: 100,
+  DELAY_NEXT_PROBLEM: 1000,
+  DELAY_FOCUS: 100
+};
+
+let gameState = {
+  isPlaying: false,
+  currentProblem: 0,
+  totalProblems: 100,
+  operations: ['+'],
+  correctCount: 0,
+  incorrectCount: 0,
+  startTime: null,
+  problems: [],
+  currentAnswer: '',
+  expectedDigits: 1
+};
+
+let timer = null;
+
+// DOMが読み込まれたときの初期化
+document.addEventListener('DOMContentLoaded', function() {
+  // テンキーのイベント委譲
+  const tenkeyGrid = document.getElementById('tenkey-grid');
+  tenkeyGrid.addEventListener('click', function(e) {
+    const button = e.target.closest('button');
+    if (!button) return;
+    
+    if (button.dataset.number) {
+      inputNumber(parseInt(button.dataset.number));
+    } else if (button.dataset.action === 'clear') {
+      clearInput();
+    }
+  });
+  
+  // 入力フィールドのイベントリスナー
+  const answerInput = getCachedElement('answer-input');
+  
+  // エンターキーで次の問題へ（期待桁数に達していない場合）
+  answerInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && gameState.isPlaying) {
+      if (gameState.currentAnswer.length > 0 && !isNaN(parseInt(gameState.currentAnswer))) {
+        checkAnswer();
+      }
+    }
+  });
+
+  // キーボード入力の制限（数字以外を防ぐ）
+  answerInput.addEventListener('keydown', function(e) {
+    // 数字キー、Backspace、Delete、Enter、Tabのみ許可
+    const allowedKeys = ['0','1','2','3','4','5','6','7','8','9','Backspace','Delete','Enter','Tab','ArrowLeft','ArrowRight'];
+    if (!allowedKeys.includes(e.key)) {
+      e.preventDefault();
+    }
+  });
+
+  // 入力処理
+  answerInput.addEventListener('input', function(e) {
+    if (!gameState.isPlaying) return;
+    
+    const input = e.target.value;
+    gameState.currentAnswer = input;
+    
+    // 期待する桁数に達したら自動チェック
+    if (input.length === gameState.expectedDigits) {
+      checkAnswer();
+    }
+  });
+});
+
+// ゲーム開始
+function startGame() {
+  const problemCount = parseInt(document.getElementById('problem-count').value);
+  
+  // 選択された演算を取得
+  const operations = [];
+  if (document.getElementById('op-add').checked) operations.push('+');
+  if (document.getElementById('op-sub').checked) operations.push('-');
+  if (document.getElementById('op-mul').checked) operations.push('*');
+  if (document.getElementById('op-div').checked) operations.push('/');
+  
+  if (operations.length === 0) {
+    alert('少なくとも1つの演算を選択してください');
+    return;
+  }
+  
+  gameState = {
+    isPlaying: true,
+    currentProblem: 0,
+    totalProblems: problemCount,
+    operations: operations,
+    correctCount: 0,
+    incorrectCount: 0,
+    startTime: Date.now(),
+    problems: [],
+    currentAnswer: '',
+    expectedDigits: 1
+  };
+  
+  // 問題を生成
+  generateProblems();
+  
+  // UI切り替え
+  document.getElementById('settings-panel').style.display = 'none';
+  document.getElementById('game-panel').style.display = 'block';
+  document.getElementById('result-panel').style.display = 'none';
+  
+  // 統計情報初期化
+  updateStats();
+  
+  // タイマー開始
+  startTimer();
+  
+  // 最初の問題を表示
+  showNextProblem();
+  
+  // 入力フォーカス
+  const answerInput = getCachedElement('answer-input');
+  answerInput.disabled = false;
+  setTimeout(() => answerInput.focus(), CONFIG.DELAY_FOCUS);
+}
+
+// 問題生成
+function generateProblems() {
+  gameState.problems = [];
+  
+  for (let i = 0; i < gameState.totalProblems; i++) {
+    let num1, num2, answer, operation;
+    
+    do {
+      // ランダムに演算を選択
+      operation = gameState.operations[Math.floor(Math.random() * gameState.operations.length)];
+      
+      num1 = Math.floor(Math.random() * CONFIG.NUMBER_MAX) + CONFIG.NUMBER_MIN;
+      num2 = Math.floor(Math.random() * CONFIG.NUMBER_MAX) + CONFIG.NUMBER_MIN;
+      
+      switch (operation) {
+        case '+':
+          answer = num1 + num2;
+          break;
+        case '-':
+          // 引き算でマイナスにならないように
+          if (num1 < num2) {
+            [num1, num2] = [num2, num1];
+          }
+          answer = num1 - num2;
+          break;
+        case '*':
+          answer = num1 * num2;
+          break;
+        case '/':
+          // 割り算で割り切れるように
+          answer = num1;
+          num1 = num1 * num2; // num1を被除数にする
+          break;
+      }
+    } while (answer < 0 || answer !== Math.floor(answer)); // 負数や小数を避ける
+    
+    gameState.problems.push({
+      num1: num1,
+      num2: num2,
+      answer: answer,
+      operation: operation
+    });
+  }
+}
+
+// 次の問題を表示
+function showNextProblem() {
+  if (gameState.currentProblem >= gameState.totalProblems) {
+    endGame();
+    return;
+  }
+  
+  const problem = gameState.problems[gameState.currentProblem];
+  const operatorSymbol = {
+    '+': '+',
+    '-': '-',
+    '*': '×',
+    '/': '÷'
+  }[problem.operation];
+  
+  getCachedElement('problem-text').textContent = 
+    `${problem.num1} ${operatorSymbol} ${problem.num2} = ?`;
+  
+  getCachedElement('current-problem').textContent = gameState.currentProblem + 1;
+  getCachedElement('total-problems').textContent = gameState.totalProblems;
+  
+  // プログレスバー更新
+  const progress = ((gameState.currentProblem) / gameState.totalProblems) * 100;
+  getCachedElement('progress-bar').style.width = progress + '%';
+  
+  // 入力フィールドクリア
+  const answerInput = getCachedElement('answer-input');
+  answerInput.value = '';
+  getCachedElement('result-display').innerHTML = '';
+  
+  gameState.currentAnswer = '';
+  gameState.expectedDigits = problem.answer.toString().length;
+  
+  // フォーカス（ゲーム中のみ）
+  if (gameState.isPlaying) {
+    setTimeout(() => answerInput.focus(), CONFIG.DELAY_FOCUS);
+  }
+}
+
+
+// 答えチェック
+function checkAnswer() {
+  const problem = gameState.problems[gameState.currentProblem];
+  const userAnswer = parseInt(gameState.currentAnswer);
+  
+  // NaNチェックを追加
+  if (isNaN(userAnswer)) {
+    return; // 無効な入力の場合はチェックしない
+  }
+  
+  const isCorrect = userAnswer === problem.answer;
+  
+  // 結果表示
+  const resultDisplay = getCachedElement('result-display');
+  if (isCorrect) {
+    resultDisplay.innerHTML = '<span class="result-correct">✓ 正解!</span>';
+    gameState.correctCount++;
+  } else {
+    resultDisplay.innerHTML = `<span class="result-incorrect">✗ 不正解 (正解: ${problem.answer})</span>`;
+    gameState.incorrectCount++;
+  }
+  
+  // 統計更新
+  updateStats();
+  
+  // 次の問題へ
+  gameState.currentProblem++;
+  
+  setTimeout(() => {
+    showNextProblem();
+  }, CONFIG.DELAY_NEXT_PROBLEM);
+}
+
+// 統計情報更新
+function updateStats() {
+  getCachedElement('correct-count').textContent = gameState.correctCount;
+  getCachedElement('incorrect-count').textContent = gameState.incorrectCount;
+  
+  const total = gameState.correctCount + gameState.incorrectCount;
+  const accuracy = total > 0 ? Math.round((gameState.correctCount / total) * 100) : 0;
+  getCachedElement('accuracy').textContent = accuracy + '%';
+}
+
+// タイマー開始
+function startTimer() {
+  timer = setInterval(() => {
+    if (!gameState.isPlaying) return;
+    
+    const elapsed = Date.now() - gameState.startTime;
+    const minutes = Math.floor(elapsed / 60000);
+    const seconds = Math.floor((elapsed % 60000) / 1000);
+    
+    getCachedElement('timer').textContent = 
+      `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }, 1000);
+}
+
+// ゲーム終了
+function endGame() {
+  gameState.isPlaying = false;
+  
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
+  
+  // 最終結果計算
+  const totalTime = Date.now() - gameState.startTime;
+  const minutes = Math.floor(totalTime / 60000);
+  const seconds = Math.floor((totalTime % 60000) / 1000);
+  const total = gameState.correctCount + gameState.incorrectCount;
+  const avgTimePerProblem = total > 0 ? (totalTime / 1000) / total : 0;
+  const accuracy = total > 0 ? Math.round((gameState.correctCount / total) * 100) : 0;
+  
+  // 結果画面表示
+  getCachedElement('final-time').textContent = 
+    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  getCachedElement('final-correct').textContent = gameState.correctCount;
+  getCachedElement('final-accuracy').textContent = accuracy + '%';
+  getCachedElement('avg-time').textContent = total > 0 ? avgTimePerProblem.toFixed(1) + '秒' : '---';
+  
+  // UI切り替え
+  document.getElementById('game-panel').style.display = 'none';
+  document.getElementById('result-panel').style.display = 'block';
+}
+
+// 設定画面に戻る
+function showSettings() {
+  document.getElementById('settings-panel').style.display = 'block';
+  document.getElementById('game-panel').style.display = 'none';
+  document.getElementById('result-panel').style.display = 'none';
+  
+  // ゲーム状態をリセット
+  gameState.isPlaying = false;
+  
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
+  
+  // 入力フィールドを無効化
+  getCachedElement('answer-input').disabled = true;
+}
+
+// DOM要素のキャッシュ
+let cachedElements = {};
+
+function getCachedElement(id) {
+  if (!cachedElements[id]) {
+    cachedElements[id] = document.getElementById(id);
+  }
+  return cachedElements[id];
+}
+
+// テンキー入力
+function inputNumber(num) {
+  if (!gameState.isPlaying) return;
+  
+  const input = getCachedElement('answer-input');
+  const currentValue = input.value;
+  
+  // 最大桁数まで、かつ期待桁数を超えないように
+  if (currentValue.length < Math.min(CONFIG.MAX_INPUT_DIGITS, gameState.expectedDigits)) {
+    input.value = currentValue + num;
+    gameState.currentAnswer = input.value;
+    
+    // 期待する桁数に達したら自動チェック
+    if (input.value.length === gameState.expectedDigits) {
+      setTimeout(() => checkAnswer(), CONFIG.DELAY_CHECK_ANSWER);
+    }
+  }
+}
+
+// 入力クリア
+function clearInput() {
+  if (!gameState.isPlaying) return;
+  
+  const input = getCachedElement('answer-input');
+  input.value = '';
+  gameState.currentAnswer = '';
+}
+
+</script>
+</body>
+</html>
