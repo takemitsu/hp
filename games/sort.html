@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>数字並べ替え</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    button {
+      touch-action: manipulation;
+    }
+
+    .number-display {
+      font-size: 4rem;
+      font-weight: bold;
+      min-height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      border: 3px solid var(--bs-primary);
+      border-radius: 0.5rem;
+      background: #f8f9fa;
+      color: #212529;
+    }
+
+    [data-bs-theme="dark"] .number-display {
+      background: #212529;
+      color: #f8f9fa;
+    }
+
+    [data-bs-theme="light"] .number-display {
+      background: #f8f9fa;
+      color: #212529;
+    }
+
+    .select-btn {
+      font-size: 1.5rem;
+      font-weight: bold;
+      height: 60px;
+      touch-action: manipulation;
+    }
+
+    .selected-display {
+      font-size: 2rem;
+      font-weight: bold;
+      min-height: 60px;
+      color: var(--bs-info);
+    }
+
+    .result-correct {
+      color: var(--bs-success);
+      font-size: 1.3rem;
+      font-weight: bold;
+    }
+
+    .result-incorrect {
+      color: var(--bs-danger);
+      font-size: 1.3rem;
+      font-weight: bold;
+    }
+
+    .stats-card {
+      text-align: center;
+      padding: 1rem;
+    }
+
+    .stats-number {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .settings-panel {
+      background-color: var(--bs-secondary-bg-subtle);
+      border-radius: 0.375rem;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 576px) {
+      .number-display {
+        font-size: 3rem;
+        min-height: 120px;
+        gap: 0.5rem;
+      }
+
+      .select-btn {
+        font-size: 1.2rem;
+        height: 50px;
+      }
+
+      .selected-display {
+        font-size: 1.5rem;
+        min-height: 50px;
+      }
+
+      .stats-number {
+        font-size: 1.5rem;
+      }
+
+      .result-correct, .result-incorrect {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar bg-body-tertiary" id="header" aria-label="header">
+  <div class="container-fluid justify-content-start">
+    <a class="navbar-brand" href="/">takemitsu.net</a>
+    <div class="nav-text">数字並べ替え</div>
+
+    <ul class="navbar-nav flex-row ms-auto mb-2 mb-lg-0">
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('dark')">dark</a></li>
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('light')">light</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container mt-3">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8">
+
+      <!-- 設定パネル -->
+      <div class="settings-panel" id="settings-panel">
+        <h5 class="mb-3">ゲーム設定</h5>
+
+        <div class="mb-3">
+          <label class="form-label">数字の個数</label>
+          <div class="btn-group w-100" role="group">
+            <input type="radio" class="btn-check" name="count" id="count1" value="4">
+            <label class="btn btn-outline-primary" for="count1" style="touch-action: manipulation;">4個</label>
+            <input type="radio" class="btn-check" name="count" id="count2" value="5" checked>
+            <label class="btn btn-outline-primary" for="count2" style="touch-action: manipulation;">5個</label>
+            <input type="radio" class="btn-check" name="count" id="count3" value="6">
+            <label class="btn btn-outline-primary" for="count3" style="touch-action: manipulation;">6個</label>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">問題数</label>
+          <div class="btn-group w-100" role="group">
+            <input type="radio" class="btn-check" name="problems" id="prob1" value="10" checked>
+            <label class="btn btn-outline-primary" for="prob1" style="touch-action: manipulation;">10問</label>
+            <input type="radio" class="btn-check" name="problems" id="prob2" value="20">
+            <label class="btn btn-outline-primary" for="prob2" style="touch-action: manipulation;">20問</label>
+            <input type="radio" class="btn-check" name="problems" id="prob3" value="30">
+            <label class="btn btn-outline-primary" for="prob3" style="touch-action: manipulation;">30問</label>
+          </div>
+        </div>
+
+        <div class="alert alert-info">
+          <strong>数字並べ替えとは？</strong><br>
+          表示された数字を記憶し、小さい順にボタンで選択するゲーム。<br>
+          短期記憶とソート処理を同時に鍛えます。
+        </div>
+
+        <div class="d-grid">
+          <button class="btn btn-primary btn-lg" onclick="startGame()">ゲーム開始</button>
+        </div>
+      </div>
+
+      <!-- ゲーム画面 -->
+      <div id="game-panel" style="display: none;">
+        <div class="card mb-2">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span>問題 <span id="current-problem">1</span> / <span id="total-problems">10</span></span>
+              <span id="phase-text">記憶中...</span>
+            </div>
+            <div class="progress mb-3">
+              <div class="progress-bar" id="progress-bar" role="progressbar" style="width: 0%"></div>
+            </div>
+
+            <div class="number-display mb-3" id="number-display">準備中</div>
+
+            <div class="selected-display text-center mb-3" id="selected-display">
+              <!-- 選択した数字 -->
+            </div>
+
+            <div id="result-display" class="text-center mb-3" style="min-height: 40px;">
+              <!-- 正誤表示 -->
+            </div>
+
+            <!-- 選択ボタン -->
+            <div id="select-area" style="display: none;">
+              <div class="row g-2 mb-3">
+                <div class="col">
+                  <button class="btn btn-primary select-btn w-100" onclick="selectNumber(0)">0</button>
+                </div>
+                <div class="col">
+                  <button class="btn btn-primary select-btn w-100" onclick="selectNumber(1)">1</button>
+                </div>
+                <div class="col">
+                  <button class="btn btn-primary select-btn w-100" onclick="selectNumber(2)">2</button>
+                </div>
+                <div class="col">
+                  <button class="btn btn-primary select-btn w-100" onclick="selectNumber(3)">3</button>
+                </div>
+                <div class="col">
+                  <button class="btn btn-primary select-btn w-100" onclick="selectNumber(4)">4</button>
+                </div>
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col">
+                  <button class="btn btn-primary select-btn w-100" onclick="selectNumber(5)">5</button>
+                </div>
+                <div class="col">
+                  <button class="btn btn-primary select-btn w-100" onclick="selectNumber(6)">6</button>
+                </div>
+                <div class="col">
+                  <button class="btn btn-primary select-btn w-100" onclick="selectNumber(7)">7</button>
+                </div>
+                <div class="col">
+                  <button class="btn btn-primary select-btn w-100" onclick="selectNumber(8)">8</button>
+                </div>
+                <div class="col">
+                  <button class="btn btn-primary select-btn w-100" onclick="selectNumber(9)">9</button>
+                </div>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-6">
+                  <button class="btn btn-warning w-100" style="height: 50px; touch-action: manipulation;" onclick="undoSelection()">戻す</button>
+                </div>
+                <div class="col-6">
+                  <button class="btn btn-outline-danger w-100" style="height: 50px; touch-action: manipulation;" onclick="endGame()">終了</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 統計情報 -->
+        <div class="row g-2">
+          <div class="col-4">
+            <div class="card stats-card">
+              <div class="stats-number text-success" id="correct-count">0</div>
+              <small>正解</small>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="card stats-card">
+              <div class="stats-number text-danger" id="incorrect-count">0</div>
+              <small>不正解</small>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="card stats-card">
+              <div class="stats-number text-primary" id="accuracy">0%</div>
+              <small>正解率</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 結果画面 -->
+      <div class="card" id="result-panel" style="display: none;">
+        <div class="card-body text-center">
+          <h3 class="mb-4">結果</h3>
+
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number text-success" id="final-correct">0</div>
+                <small>正解数</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number text-primary" id="final-accuracy">0%</div>
+                <small>正解率</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number" id="final-total">0</div>
+                <small>総問題数</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number" id="final-numbers">5個</div>
+                <small>数字数/問</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-grid">
+            <button class="btn btn-primary" onclick="showSettings()">もう一度</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-info mt-3" role="alert">
+        <h5 class="alert-heading">遊び方</h5>
+        <p class="mb-0">
+          表示される数字を記憶し、小さい順にボタンを押していきます。<br>
+          短期記憶力とソート能力を鍛えられます。
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../setTheme.mini.js"></script>
+<script>
+let gameState = {
+  isPlaying: false,
+  numbersCount: 5,
+  totalProblems: 10,
+  currentProblem: 0,
+  correctCount: 0,
+  incorrectCount: 0,
+  currentNumbers: [],
+  selectedNumbers: [],
+  correctOrder: []
+};
+
+// ユニークなランダム数字を生成
+function generateNumbers(count) {
+  const numbers = [];
+  const used = new Set();
+
+  while (numbers.length < count) {
+    const num = Math.floor(Math.random() * 10);
+    if (!used.has(num)) {
+      numbers.push(num);
+      used.add(num);
+    }
+  }
+
+  return numbers;
+}
+
+// ゲーム開始
+function startGame() {
+  const numbersCount = parseInt(document.querySelector('input[name="count"]:checked').value);
+  const totalProblems = parseInt(document.querySelector('input[name="problems"]:checked').value);
+
+  gameState = {
+    isPlaying: true,
+    numbersCount: numbersCount,
+    totalProblems: totalProblems,
+    currentProblem: 0,
+    correctCount: 0,
+    incorrectCount: 0,
+    currentNumbers: [],
+    selectedNumbers: [],
+    correctOrder: []
+  };
+
+  document.getElementById('settings-panel').style.display = 'none';
+  document.getElementById('game-panel').style.display = 'block';
+  document.getElementById('result-panel').style.display = 'none';
+
+  document.getElementById('total-problems').textContent = gameState.totalProblems;
+  updateStats();
+  startProblem();
+}
+
+// 問題開始
+function startProblem() {
+  gameState.currentProblem++;
+  gameState.currentNumbers = generateNumbers(gameState.numbersCount);
+  gameState.selectedNumbers = [];
+  gameState.correctOrder = [...gameState.currentNumbers].sort((a, b) => a - b);
+
+  document.getElementById('current-problem').textContent = gameState.currentProblem;
+  document.getElementById('selected-display').textContent = '';
+  document.getElementById('result-display').innerHTML = '';
+  document.getElementById('select-area').style.display = 'none';
+  document.getElementById('phase-text').textContent = '記憶中...';
+
+  const progress = ((gameState.currentProblem - 1) / gameState.totalProblems) * 100;
+  document.getElementById('progress-bar').style.width = progress + '%';
+
+  // 数字を表示
+  const display = document.getElementById('number-display');
+  display.textContent = gameState.currentNumbers.join('  ');
+
+  // 3秒後に消す
+  setTimeout(() => {
+    display.textContent = '?';
+    document.getElementById('phase-text').textContent = '小さい順に選択';
+    document.getElementById('select-area').style.display = 'block';
+    updateSelectedDisplay();
+  }, 3000);
+}
+
+// 数字選択
+function selectNumber(num) {
+  if (!gameState.isPlaying) return;
+
+  // すでに選択済みの場合は無視
+  if (gameState.selectedNumbers.includes(num)) {
+    return;
+  }
+
+  // 表示された数字に含まれていない場合は無視
+  if (!gameState.currentNumbers.includes(num)) {
+    return;
+  }
+
+  gameState.selectedNumbers.push(num);
+  updateSelectedDisplay();
+
+  // 全て選択したら判定
+  if (gameState.selectedNumbers.length === gameState.numbersCount) {
+    checkAnswer();
+  }
+}
+
+// 選択を1つ戻す
+function undoSelection() {
+  if (!gameState.isPlaying) return;
+  if (gameState.selectedNumbers.length === 0) return;
+
+  gameState.selectedNumbers.pop();
+  updateSelectedDisplay();
+}
+
+// 選択した数字を表示
+function updateSelectedDisplay() {
+  const display = document.getElementById('selected-display');
+  if (gameState.selectedNumbers.length === 0) {
+    display.textContent = '選択してください';
+  } else {
+    display.textContent = gameState.selectedNumbers.join('  ');
+  }
+}
+
+// 回答チェック
+function checkAnswer() {
+  const isCorrect = JSON.stringify(gameState.selectedNumbers) === JSON.stringify(gameState.correctOrder);
+  const resultDisplay = document.getElementById('result-display');
+
+  if (isCorrect) {
+    resultDisplay.innerHTML = `<span class="result-correct">✓ 正解!<br>正解: ${gameState.correctOrder.join(' ')}</span>`;
+    gameState.correctCount++;
+  } else {
+    resultDisplay.innerHTML = `<span class="result-incorrect">✗ 不正解<br>あなた: ${gameState.selectedNumbers.join(' ')}<br>正解: ${gameState.correctOrder.join(' ')}</span>`;
+    gameState.incorrectCount++;
+  }
+
+  updateStats();
+
+  // 次の問題へ
+  const delay = isCorrect ? 1500 : 2500;
+  setTimeout(() => {
+    if (gameState.currentProblem < gameState.totalProblems) {
+      startProblem();
+    } else {
+      endGame();
+    }
+  }, delay);
+}
+
+// 統計更新
+function updateStats() {
+  document.getElementById('correct-count').textContent = gameState.correctCount;
+  document.getElementById('incorrect-count').textContent = gameState.incorrectCount;
+
+  const total = gameState.correctCount + gameState.incorrectCount;
+  const accuracy = total > 0 ? Math.round((gameState.correctCount / total) * 100) : 0;
+  document.getElementById('accuracy').textContent = accuracy + '%';
+}
+
+// ゲーム終了
+function endGame() {
+  gameState.isPlaying = false;
+
+  const total = gameState.correctCount + gameState.incorrectCount;
+  const accuracy = total > 0 ? Math.round((gameState.correctCount / total) * 100) : 0;
+
+  document.getElementById('final-correct').textContent = gameState.correctCount;
+  document.getElementById('final-accuracy').textContent = accuracy + '%';
+  document.getElementById('final-total').textContent = total;
+  document.getElementById('final-numbers').textContent = gameState.numbersCount + '個';
+
+  document.getElementById('game-panel').style.display = 'none';
+  document.getElementById('result-panel').style.display = 'block';
+}
+
+// 設定画面に戻る
+function showSettings() {
+  document.getElementById('settings-panel').style.display = 'block';
+  document.getElementById('game-panel').style.display = 'none';
+  document.getElementById('result-panel').style.display = 'none';
+
+  gameState.isPlaying = false;
+}
+
+// キーボード入力（数字キー）
+document.addEventListener('keydown', (e) => {
+  if (!gameState.isPlaying) return;
+
+  const selectArea = document.getElementById('select-area');
+  if (selectArea.style.display === 'none') return;
+
+  if (e.key >= '0' && e.key <= '9') {
+    selectNumber(parseInt(e.key));
+  } else if (e.key === 'Backspace') {
+    undoSelection();
+  }
+});
+</script>
+</body>
+</html>
