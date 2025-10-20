@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>パターン記憶</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    button {
+      touch-action: manipulation;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .grid-btn {
+      aspect-ratio: 1;
+      font-size: 2rem;
+      font-weight: bold;
+      border: 3px solid var(--bs-border-color);
+      border-radius: 0.5rem;
+      background: var(--bs-secondary-bg);
+      color: var(--bs-body-color);
+      transition: all 0.15s ease;
+      touch-action: manipulation;
+      min-height: 80px;
+    }
+
+    .grid-btn:hover:not(:disabled) {
+      transform: scale(1.05);
+    }
+
+    .grid-btn:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+
+    .grid-btn.flash {
+      background: var(--bs-primary) !important;
+      border-color: var(--bs-primary) !important;
+      color: white !important;
+      transform: scale(1.1);
+      box-shadow: 0 0 20px var(--bs-primary);
+    }
+
+    .grid-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .stats-card {
+      text-align: center;
+      padding: 1rem;
+    }
+
+    .stats-number {
+      font-size: 2.5rem;
+      font-weight: bold;
+    }
+
+    .settings-panel {
+      background-color: var(--bs-secondary-bg-subtle);
+      border-radius: 0.375rem;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .status-text {
+      font-size: 1.5rem;
+      font-weight: bold;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (max-width: 576px) {
+      .grid-container {
+        gap: 8px;
+        max-width: 100%;
+      }
+
+      .grid-btn {
+        font-size: 1.5rem;
+        min-height: 60px;
+      }
+
+      .stats-number {
+        font-size: 2rem;
+      }
+
+      .status-text {
+        font-size: 1.2rem;
+        min-height: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar bg-body-tertiary" id="header" aria-label="header">
+  <div class="container-fluid justify-content-start">
+    <a class="navbar-brand" href="/">takemitsu.net</a>
+    <div class="nav-text">パターン記憶</div>
+
+    <ul class="navbar-nav flex-row ms-auto mb-2 mb-lg-0">
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('dark')">dark</a></li>
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('light')">light</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container mt-3">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8">
+
+      <!-- 設定パネル -->
+      <div class="settings-panel" id="settings-panel">
+        <h5 class="mb-3">ゲーム設定</h5>
+
+        <div class="mb-3">
+          <label class="form-label">初期パターン長</label>
+          <div class="btn-group w-100" role="group">
+            <input type="radio" class="btn-check" name="initial" id="initial1" value="3" checked>
+            <label class="btn btn-outline-primary" for="initial1" style="touch-action: manipulation;">3個（簡単）</label>
+            <input type="radio" class="btn-check" name="initial" id="initial2" value="4">
+            <label class="btn btn-outline-primary" for="initial2" style="touch-action: manipulation;">4個（中級）</label>
+            <input type="radio" class="btn-check" name="initial" id="initial3" value="5">
+            <label class="btn btn-outline-primary" for="initial3" style="touch-action: manipulation;">5個（上級）</label>
+          </div>
+        </div>
+
+        <div class="alert alert-info">
+          <strong>パターン記憶とは？</strong><br>
+          光ったボタンの順番を記憶し、同じ順番で押すゲーム。<br>
+          正解すると1個ずつパターンが増えていきます。
+        </div>
+
+        <div class="d-grid">
+          <button class="btn btn-primary btn-lg" onclick="startGame()">ゲーム開始</button>
+        </div>
+      </div>
+
+      <!-- ゲーム画面 -->
+      <div id="game-panel" style="display: none;">
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="status-text text-primary mb-3" id="status-text">
+              準備中...
+            </div>
+
+            <div class="grid-container mb-3" id="grid-container">
+              <button class="grid-btn" data-index="0" onclick="playerClick(0)">1</button>
+              <button class="grid-btn" data-index="1" onclick="playerClick(1)">2</button>
+              <button class="grid-btn" data-index="2" onclick="playerClick(2)">3</button>
+              <button class="grid-btn" data-index="3" onclick="playerClick(3)">4</button>
+              <button class="grid-btn" data-index="4" onclick="playerClick(4)">5</button>
+              <button class="grid-btn" data-index="5" onclick="playerClick(5)">6</button>
+              <button class="grid-btn" data-index="6" onclick="playerClick(6)">7</button>
+              <button class="grid-btn" data-index="7" onclick="playerClick(7)">8</button>
+              <button class="grid-btn" data-index="8" onclick="playerClick(8)">9</button>
+            </div>
+
+            <div class="d-grid">
+              <button class="btn btn-outline-danger" onclick="endGame()">終了</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 統計情報 -->
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="card stats-card">
+              <div class="stats-number text-primary" id="current-level">3</div>
+              <small>現在のレベル</small>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="card stats-card">
+              <div class="stats-number text-success" id="best-score">0</div>
+              <small>最高記録</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 結果画面 -->
+      <div class="card" id="result-panel" style="display: none;">
+        <div class="card-body text-center">
+          <h3 class="mb-4">ゲームオーバー</h3>
+
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number text-primary" id="final-level">3</div>
+                <small>到達レベル</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number text-success" id="final-best">0</div>
+                <small>最高記録</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-grid">
+            <button class="btn btn-primary" onclick="showSettings()">もう一度</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-info mt-3" role="alert">
+        <h5 class="alert-heading">遊び方</h5>
+        <p class="mb-0">
+          ボタンが光る順番を覚えて、同じ順番で押していきます。<br>
+          正解すると1個ずつパターンが増え、不正解でゲームオーバーです。
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../setTheme.mini.js"></script>
+<script>
+let gameState = {
+  isPlaying: false,
+  pattern: [],
+  playerPattern: [],
+  level: 3,
+  bestScore: 0,
+  isShowingPattern: false,
+  canClick: false
+};
+
+// ゲーム開始
+function startGame() {
+  const initialLength = parseInt(document.querySelector('input[name="initial"]:checked').value);
+
+  // localStorageから最高記録を読み込む
+  const savedBest = localStorage.getItem('simon-best-score');
+  const bestScore = savedBest ? parseInt(savedBest) : 0;
+
+  gameState = {
+    isPlaying: true,
+    pattern: [],
+    playerPattern: [],
+    level: initialLength,
+    bestScore: bestScore,
+    isShowingPattern: false,
+    canClick: false
+  };
+
+  document.getElementById('settings-panel').style.display = 'none';
+  document.getElementById('game-panel').style.display = 'block';
+  document.getElementById('result-panel').style.display = 'none';
+
+  updateStats();
+  startRound();
+}
+
+// ラウンド開始
+function startRound() {
+  gameState.playerPattern = [];
+  gameState.canClick = false;
+
+  // パターンに新しい位置を追加
+  const newPosition = Math.floor(Math.random() * 9);
+  gameState.pattern.push(newPosition);
+
+  updateStats();
+  setStatusText('パターンを見てください');
+
+  // 1秒待ってからパターンを表示
+  setTimeout(() => {
+    showPattern();
+  }, 1000);
+}
+
+// パターンを表示
+async function showPattern() {
+  gameState.isShowingPattern = true;
+  disableAllButtons();
+
+  for (let i = 0; i < gameState.pattern.length; i++) {
+    await flashButton(gameState.pattern[i]);
+    await sleep(200); // ボタン間の待ち時間
+  }
+
+  gameState.isShowingPattern = false;
+  gameState.canClick = true;
+  enableAllButtons();
+  setStatusText('同じ順番で押してください');
+}
+
+// ボタンを光らせる
+function flashButton(index) {
+  return new Promise((resolve) => {
+    const buttons = document.querySelectorAll('.grid-btn');
+    const button = buttons[index];
+
+    button.classList.add('flash');
+
+    setTimeout(() => {
+      button.classList.remove('flash');
+      resolve();
+    }, 500);
+  });
+}
+
+// 待機
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// プレイヤーがボタンをクリック
+function playerClick(index) {
+  if (!gameState.canClick || !gameState.isPlaying) return;
+
+  gameState.playerPattern.push(index);
+
+  // 即座にフラッシュ
+  const buttons = document.querySelectorAll('.grid-btn');
+  buttons[index].classList.add('flash');
+  setTimeout(() => buttons[index].classList.remove('flash'), 200);
+
+  // 現在の入力が正しいかチェック
+  const currentIndex = gameState.playerPattern.length - 1;
+  if (gameState.playerPattern[currentIndex] !== gameState.pattern[currentIndex]) {
+    // 不正解
+    gameOver();
+    return;
+  }
+
+  // 全て入力し終わったかチェック
+  if (gameState.playerPattern.length === gameState.pattern.length) {
+    // 正解！
+    gameState.canClick = false;
+    setStatusText('正解！');
+
+    // レベルアップ
+    gameState.level = gameState.pattern.length + 1;
+
+    // 最高記録更新チェック
+    if (gameState.pattern.length > gameState.bestScore) {
+      gameState.bestScore = gameState.pattern.length;
+      localStorage.setItem('simon-best-score', gameState.bestScore.toString());
+    }
+
+    updateStats();
+
+    // 次のラウンドへ
+    setTimeout(() => {
+      startRound();
+    }, 1500);
+  }
+}
+
+// ゲームオーバー
+function gameOver() {
+  gameState.isPlaying = false;
+  gameState.canClick = false;
+  disableAllButtons();
+
+  setStatusText('不正解！');
+
+  setTimeout(() => {
+    document.getElementById('final-level').textContent = gameState.pattern.length;
+    document.getElementById('final-best').textContent = gameState.bestScore;
+
+    document.getElementById('game-panel').style.display = 'none';
+    document.getElementById('result-panel').style.display = 'block';
+  }, 1500);
+}
+
+// ゲーム終了（途中終了）
+function endGame() {
+  if (!confirm('ゲームを終了しますか？')) return;
+
+  gameState.isPlaying = false;
+  gameState.canClick = false;
+
+  document.getElementById('final-level').textContent = gameState.pattern.length;
+  document.getElementById('final-best').textContent = gameState.bestScore;
+
+  document.getElementById('game-panel').style.display = 'none';
+  document.getElementById('result-panel').style.display = 'block';
+}
+
+// 設定画面に戻る
+function showSettings() {
+  document.getElementById('settings-panel').style.display = 'block';
+  document.getElementById('game-panel').style.display = 'none';
+  document.getElementById('result-panel').style.display = 'none';
+
+  gameState.isPlaying = false;
+  gameState.canClick = false;
+}
+
+// 統計更新
+function updateStats() {
+  document.getElementById('current-level').textContent = gameState.level;
+  document.getElementById('best-score').textContent = gameState.bestScore;
+}
+
+// ステータステキスト設定
+function setStatusText(text) {
+  document.getElementById('status-text').textContent = text;
+}
+
+// 全ボタンを無効化
+function disableAllButtons() {
+  document.querySelectorAll('.grid-btn').forEach(btn => {
+    btn.disabled = true;
+  });
+}
+
+// 全ボタンを有効化
+function enableAllButtons() {
+  document.querySelectorAll('.grid-btn').forEach(btn => {
+    btn.disabled = false;
+  });
+}
+</script>
+</body>
+</html>
