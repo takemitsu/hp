@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>素数判定ゲーム</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    button {
+      touch-action: manipulation;
+    }
+
+    .number-display {
+      font-size: 4rem;
+      font-weight: bold;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid var(--bs-primary);
+      border-radius: 0.5rem;
+      /* デフォルトはlightテーマ */
+      background: #f8f9fa;
+      color: #212529;
+    }
+
+    [data-bs-theme="dark"] .number-display {
+      background: #212529;
+      color: #f8f9fa;
+    }
+
+    [data-bs-theme="light"] .number-display {
+      background: #f8f9fa;
+      color: #212529;
+    }
+
+    .answer-btn {
+      font-size: 1.5rem;
+      font-weight: bold;
+      height: 80px;
+      width: 100%;
+      touch-action: manipulation;
+    }
+
+    .result-correct {
+      color: var(--bs-success);
+      font-size: 1.3rem;
+      font-weight: bold;
+    }
+
+    .result-incorrect {
+      color: var(--bs-danger);
+      font-size: 1.3rem;
+      font-weight: bold;
+    }
+
+    .stats-card {
+      text-align: center;
+      padding: 1rem;
+    }
+
+    .stats-number {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .settings-panel {
+      background-color: var(--bs-secondary-bg-subtle);
+      border-radius: 0.375rem;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 576px) {
+      .number-display {
+        font-size: 3rem;
+        min-height: 100px;
+      }
+
+      .answer-btn {
+        font-size: 1.2rem;
+        height: 60px;
+      }
+
+      .stats-number {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar bg-body-tertiary" id="header" aria-label="header">
+  <div class="container-fluid justify-content-start">
+    <a class="navbar-brand" href="/">takemitsu.net</a>
+    <div class="nav-text">素数判定ゲーム</div>
+
+    <ul class="navbar-nav flex-row ms-auto mb-2 mb-lg-0">
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('dark')">dark</a></li>
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('light')">light</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container mt-3">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8">
+
+      <!-- 設定パネル -->
+      <div class="settings-panel" id="settings-panel">
+        <h5 class="mb-3">ゲーム設定</h5>
+
+        <div class="mb-3">
+          <label class="form-label">数字の範囲</label>
+          <div class="btn-group w-100" role="group">
+            <input type="radio" class="btn-check" name="range" id="range1" value="30" checked>
+            <label class="btn btn-outline-primary" for="range1" style="touch-action: manipulation;">10-30</label>
+            <input type="radio" class="btn-check" name="range" id="range2" value="50">
+            <label class="btn btn-outline-primary" for="range2" style="touch-action: manipulation;">10-50</label>
+            <input type="radio" class="btn-check" name="range" id="range3" value="100">
+            <label class="btn btn-outline-primary" for="range3" style="touch-action: manipulation;">10-100</label>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">問題数</label>
+          <div class="btn-group w-100" role="group">
+            <input type="radio" class="btn-check" name="count" id="count1" value="20" checked>
+            <label class="btn btn-outline-primary" for="count1" style="touch-action: manipulation;">20問</label>
+            <input type="radio" class="btn-check" name="count" id="count2" value="50">
+            <label class="btn btn-outline-primary" for="count2" style="touch-action: manipulation;">50問</label>
+            <input type="radio" class="btn-check" name="count" id="count3" value="100">
+            <label class="btn btn-outline-primary" for="count3" style="touch-action: manipulation;">100問</label>
+          </div>
+        </div>
+
+        <div class="d-grid">
+          <button class="btn btn-primary btn-lg" onclick="startGame()">ゲーム開始</button>
+        </div>
+      </div>
+
+      <!-- ゲーム画面 -->
+      <div id="game-panel" style="display: none;">
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span>問題 <span id="current-problem">1</span> / <span id="total-problems">20</span></span>
+              <span>時間: <span id="timer">00:00</span></span>
+            </div>
+            <div class="progress mb-3">
+              <div class="progress-bar" id="progress-bar" role="progressbar" style="width: 0%"></div>
+            </div>
+
+            <div class="number-display mb-4" id="number-display">--</div>
+
+            <div id="result-display" class="text-center mb-3" style="min-height: 40px;">
+              <!-- 正誤表示 -->
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <button class="btn btn-success answer-btn" id="prime-btn" onclick="answer(true)">素数</button>
+              </div>
+              <div class="col-6">
+                <button class="btn btn-warning answer-btn" id="composite-btn" onclick="answer(false)">合成数</button>
+              </div>
+            </div>
+
+            <div class="row g-2">
+              <div class="col-sm-6">
+                <button class="btn btn-outline-danger w-100" onclick="endGame()">終了</button>
+              </div>
+              <div class="col-sm-6">
+                <button class="btn btn-outline-info w-100" onclick="skipProblem()">スキップ</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 統計情報 -->
+        <div class="row g-2">
+          <div class="col-4">
+            <div class="card stats-card">
+              <div class="stats-number text-success" id="correct-count">0</div>
+              <small>正解</small>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="card stats-card">
+              <div class="stats-number text-danger" id="incorrect-count">0</div>
+              <small>不正解</small>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="card stats-card">
+              <div class="stats-number text-primary" id="accuracy">0%</div>
+              <small>正解率</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 結果画面 -->
+      <div class="card" id="result-panel" style="display: none;">
+        <div class="card-body text-center">
+          <h3 class="mb-4">結果</h3>
+
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number" id="final-time">00:00</div>
+                <small>総時間</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number text-success" id="final-correct">0</div>
+                <small>正解数</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number text-primary" id="final-accuracy">0%</div>
+                <small>正解率</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number" id="avg-time">0.0s</div>
+                <small>平均/問</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-grid">
+            <button class="btn btn-primary" onclick="showSettings()">もう一度</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-info mt-3" role="alert">
+        <h5 class="alert-heading">素数とは？</h5>
+        <p class="mb-0">1より大きい自然数で、1とその数自身以外では割り切れない数。<br>
+        例: 2, 3, 5, 7, 11, 13, 17, 19, 23...</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../setTheme.mini.js"></script>
+<script>
+let gameState = {
+  isPlaying: false,
+  currentProblem: 0,
+  totalProblems: 20,
+  maxNumber: 30,
+  correctCount: 0,
+  incorrectCount: 0,
+  startTime: null,
+  currentNumber: null,
+  canAnswer: true
+};
+
+let timer = null;
+
+// 素数判定関数
+function isPrime(n) {
+  if (n < 2) return false;
+  if (n === 2) return true;
+  if (n % 2 === 0) return false;
+
+  for (let i = 3; i * i <= n; i += 2) {
+    if (n % i === 0) return false;
+  }
+
+  return true;
+}
+
+// ランダムな数字を生成
+function generateNumber() {
+  return Math.floor(Math.random() * (gameState.maxNumber - 10 + 1)) + 10;
+}
+
+// ゲーム開始
+function startGame() {
+  const range = parseInt(document.querySelector('input[name="range"]:checked').value);
+  const count = parseInt(document.querySelector('input[name="count"]:checked').value);
+
+  gameState = {
+    isPlaying: true,
+    currentProblem: 0,
+    totalProblems: count,
+    maxNumber: range,
+    correctCount: 0,
+    incorrectCount: 0,
+    startTime: Date.now(),
+    currentNumber: null,
+    canAnswer: true
+  };
+
+  document.getElementById('settings-panel').style.display = 'none';
+  document.getElementById('game-panel').style.display = 'block';
+  document.getElementById('result-panel').style.display = 'none';
+
+  updateStats();
+  startTimer();
+  showNextProblem();
+}
+
+// 次の問題を表示
+function showNextProblem() {
+  if (gameState.currentProblem >= gameState.totalProblems) {
+    endGame();
+    return;
+  }
+
+  gameState.currentProblem++;
+  gameState.currentNumber = generateNumber();
+  gameState.canAnswer = true;
+
+  document.getElementById('number-display').textContent = gameState.currentNumber;
+  document.getElementById('current-problem').textContent = gameState.currentProblem;
+  document.getElementById('total-problems').textContent = gameState.totalProblems;
+  document.getElementById('result-display').innerHTML = '';
+
+  const progress = (gameState.currentProblem / gameState.totalProblems) * 100;
+  document.getElementById('progress-bar').style.width = progress + '%';
+
+  // ボタンを有効化
+  document.getElementById('prime-btn').disabled = false;
+  document.getElementById('composite-btn').disabled = false;
+}
+
+// 回答処理
+function answer(userSaysPrime) {
+  if (!gameState.canAnswer || !gameState.isPlaying) return;
+
+  gameState.canAnswer = false;
+
+  // ボタンを無効化
+  document.getElementById('prime-btn').disabled = true;
+  document.getElementById('composite-btn').disabled = true;
+
+  const actualIsPrime = isPrime(gameState.currentNumber);
+  const isCorrect = userSaysPrime === actualIsPrime;
+
+  const resultDisplay = document.getElementById('result-display');
+
+  if (isCorrect) {
+    resultDisplay.innerHTML = '<span class="result-correct">✓ 正解!</span>';
+    gameState.correctCount++;
+  } else {
+    const correctAnswer = actualIsPrime ? '素数' : '合成数';
+    resultDisplay.innerHTML = `<span class="result-incorrect">✗ 不正解（正解: ${correctAnswer}）</span>`;
+    gameState.incorrectCount++;
+  }
+
+  updateStats();
+
+  setTimeout(() => {
+    showNextProblem();
+  }, 1000);
+}
+
+// スキップ
+function skipProblem() {
+  if (!gameState.isPlaying) return;
+
+  gameState.incorrectCount++;
+  updateStats();
+
+  setTimeout(() => {
+    showNextProblem();
+  }, 300);
+}
+
+// 統計更新
+function updateStats() {
+  document.getElementById('correct-count').textContent = gameState.correctCount;
+  document.getElementById('incorrect-count').textContent = gameState.incorrectCount;
+
+  const total = gameState.correctCount + gameState.incorrectCount;
+  const accuracy = total > 0 ? Math.round((gameState.correctCount / total) * 100) : 0;
+  document.getElementById('accuracy').textContent = accuracy + '%';
+}
+
+// タイマー開始
+function startTimer() {
+  timer = setInterval(() => {
+    if (!gameState.isPlaying) return;
+
+    const elapsed = Date.now() - gameState.startTime;
+    const minutes = Math.floor(elapsed / 60000);
+    const seconds = Math.floor((elapsed % 60000) / 1000);
+
+    document.getElementById('timer').textContent =
+      `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }, 1000);
+}
+
+// ゲーム終了
+function endGame() {
+  gameState.isPlaying = false;
+
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
+
+  const totalTime = Date.now() - gameState.startTime;
+  const minutes = Math.floor(totalTime / 60000);
+  const seconds = Math.floor((totalTime % 60000) / 1000);
+  const total = gameState.correctCount + gameState.incorrectCount;
+  const avgTimePerProblem = total > 0 ? (totalTime / 1000) / total : 0;
+  const accuracy = total > 0 ? Math.round((gameState.correctCount / total) * 100) : 0;
+
+  document.getElementById('final-time').textContent =
+    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  document.getElementById('final-correct').textContent = gameState.correctCount;
+  document.getElementById('final-accuracy').textContent = accuracy + '%';
+  document.getElementById('avg-time').textContent = total > 0 ? avgTimePerProblem.toFixed(1) + 's' : '---';
+
+  document.getElementById('game-panel').style.display = 'none';
+  document.getElementById('result-panel').style.display = 'block';
+}
+
+// 設定画面に戻る
+function showSettings() {
+  document.getElementById('settings-panel').style.display = 'block';
+  document.getElementById('game-panel').style.display = 'none';
+  document.getElementById('result-panel').style.display = 'none';
+
+  gameState.isPlaying = false;
+
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
+}
+
+// キーボードショートカット
+document.addEventListener('keydown', (e) => {
+  if (!gameState.isPlaying || !gameState.canAnswer) return;
+
+  if (e.key === 'p' || e.key === 'P' || e.key === '1') {
+    answer(true);
+  } else if (e.key === 'c' || e.key === 'C' || e.key === '2') {
+    answer(false);
+  } else if (e.key === 's' || e.key === 'S') {
+    skipProblem();
+  }
+});
+</script>
+</body>
+</html>
