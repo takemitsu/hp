@@ -189,8 +189,8 @@ games/
 - [x] タスク管理ファイル作成
 - [x] 素数判定ゲーム実装
 - [x] 素数判定をindex.htmlに追加
-- [ ] N-Backゲーム実装
-- [ ] N-Backをindex.htmlに追加
+- [x] N-Backゲーム実装
+- [x] N-Backをindex.htmlに追加
 - [ ] 足し算チェーン実装
 - [ ] 足し算チェーンをindex.htmlに追加
 - [ ] 数字並べ替え実装

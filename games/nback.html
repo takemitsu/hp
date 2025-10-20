@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>N-Backゲーム</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    button {
+      touch-action: manipulation;
+    }
+
+    .number-display {
+      font-size: 5rem;
+      font-weight: bold;
+      min-height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid var(--bs-primary);
+      border-radius: 0.5rem;
+      background: #f8f9fa;
+      color: #212529;
+      transition: all 0.3s ease;
+    }
+
+    [data-bs-theme="dark"] .number-display {
+      background: #212529;
+      color: #f8f9fa;
+    }
+
+    [data-bs-theme="light"] .number-display {
+      background: #f8f9fa;
+      color: #212529;
+    }
+
+    .number-display.flash {
+      transform: scale(1.1);
+      border-color: var(--bs-success);
+    }
+
+    .answer-btn {
+      font-size: 1.5rem;
+      font-weight: bold;
+      height: 80px;
+      width: 100%;
+      touch-action: manipulation;
+    }
+
+    .result-correct {
+      color: var(--bs-success);
+      font-size: 1.3rem;
+      font-weight: bold;
+    }
+
+    .result-incorrect {
+      color: var(--bs-danger);
+      font-size: 1.3rem;
+      font-weight: bold;
+    }
+
+    .stats-card {
+      text-align: center;
+      padding: 1rem;
+    }
+
+    .stats-number {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .settings-panel {
+      background-color: var(--bs-secondary-bg-subtle);
+      border-radius: 0.375rem;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .history-display {
+      font-size: 1.5rem;
+      color: var(--bs-secondary);
+      min-height: 40px;
+    }
+
+    @media (max-width: 576px) {
+      .number-display {
+        font-size: 4rem;
+        min-height: 120px;
+      }
+
+      .answer-btn {
+        font-size: 1.2rem;
+        height: 60px;
+      }
+
+      .stats-number {
+        font-size: 1.5rem;
+      }
+
+      .history-display {
+        font-size: 1.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar bg-body-tertiary" id="header" aria-label="header">
+  <div class="container-fluid justify-content-start">
+    <a class="navbar-brand" href="/">takemitsu.net</a>
+    <div class="nav-text">N-Backゲーム</div>
+
+    <ul class="navbar-nav flex-row ms-auto mb-2 mb-lg-0">
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('dark')">dark</a></li>
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('light')">light</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container mt-3">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8">
+
+      <!-- 設定パネル -->
+      <div class="settings-panel" id="settings-panel">
+        <h5 class="mb-3">ゲーム設定</h5>
+
+        <div class="mb-3">
+          <label class="form-label">難易度（N-Back）</label>
+          <div class="btn-group w-100" role="group">
+            <input type="radio" class="btn-check" name="level" id="level1" value="1" checked>
+            <label class="btn btn-outline-primary" for="level1" style="touch-action: manipulation;">1-Back（簡単）</label>
+            <input type="radio" class="btn-check" name="level" id="level2" value="2">
+            <label class="btn btn-outline-primary" for="level2" style="touch-action: manipulation;">2-Back（中級）</label>
+            <input type="radio" class="btn-check" name="level" id="level3" value="3">
+            <label class="btn btn-outline-primary" for="level3" style="touch-action: manipulation;">3-Back（上級）</label>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">問題数</label>
+          <div class="btn-group w-100" role="group">
+            <input type="radio" class="btn-check" name="count" id="count1" value="20" checked>
+            <label class="btn btn-outline-primary" for="count1" style="touch-action: manipulation;">20問</label>
+            <input type="radio" class="btn-check" name="count" id="count2" value="30">
+            <label class="btn btn-outline-primary" for="count2" style="touch-action: manipulation;">30問</label>
+            <input type="radio" class="btn-check" name="count" id="count3" value="40">
+            <label class="btn btn-outline-primary" for="count3" style="touch-action: manipulation;">40問</label>
+          </div>
+        </div>
+
+        <div class="alert alert-info">
+          <strong>N-Backとは？</strong><br>
+          N個前の数字と同じかどうかを判定するゲーム。<br>
+          例）2-Back: 3→7→3と出たら3番目で「同じ」を押す
+        </div>
+
+        <div class="d-grid">
+          <button class="btn btn-primary btn-lg" onclick="startGame()">ゲーム開始</button>
+        </div>
+      </div>
+
+      <!-- ゲーム画面 -->
+      <div id="game-panel" style="display: none;">
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span>問題 <span id="current-problem">1</span> / <span id="total-problems">20</span></span>
+              <span><span id="n-value">1</span>-Back</span>
+            </div>
+            <div class="progress mb-3">
+              <div class="progress-bar" id="progress-bar" role="progressbar" style="width: 0%"></div>
+            </div>
+
+            <div class="history-display text-center mb-2" id="history-display">
+              <!-- 履歴表示 -->
+            </div>
+
+            <div class="number-display mb-4" id="number-display">?</div>
+
+            <div id="result-display" class="text-center mb-3" style="min-height: 40px;">
+              <!-- 正誤表示 -->
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <button class="btn btn-success answer-btn" id="same-btn" onclick="answer(true)" disabled>同じ</button>
+              </div>
+              <div class="col-6">
+                <button class="btn btn-warning answer-btn" id="different-btn" onclick="answer(false)" disabled>違う</button>
+              </div>
+            </div>
+
+            <div class="d-grid">
+              <button class="btn btn-outline-danger" onclick="endGame()">終了</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 統計情報 -->
+        <div class="row g-2">
+          <div class="col-4">
+            <div class="card stats-card">
+              <div class="stats-number text-success" id="correct-count">0</div>
+              <small>正解</small>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="card stats-card">
+              <div class="stats-number text-danger" id="incorrect-count">0</div>
+              <small>不正解</small>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="card stats-card">
+              <div class="stats-number text-primary" id="accuracy">0%</div>
+              <small>正解率</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 結果画面 -->
+      <div class="card" id="result-panel" style="display: none;">
+        <div class="card-body text-center">
+          <h3 class="mb-4">結果</h3>
+
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number" id="final-level">1-Back</div>
+                <small>難易度</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number text-success" id="final-correct">0</div>
+                <small>正解数</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number text-primary" id="final-accuracy">0%</div>
+                <small>正解率</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number" id="final-total">0</div>
+                <small>総問題数</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-grid">
+            <button class="btn btn-primary" onclick="showSettings()">もう一度</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-info mt-3" role="alert">
+        <h5 class="alert-heading">N-Backゲームとは</h5>
+        <p class="mb-0">
+          ワーキングメモリを鍛える科学的根拠のあるゲーム。<br>
+          表示される数字を記憶し、N個前の数字と比較します。
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../setTheme.mini.js"></script>
+<script>
+let gameState = {
+  isPlaying: false,
+  nBack: 1,
+  currentProblem: 0,
+  totalProblems: 20,
+  correctCount: 0,
+  incorrectCount: 0,
+  history: [],
+  canAnswer: false,
+  intervalId: null
+};
+
+// ランダムな数字を生成（0-9）
+// N個前と同じになる確率を40%に調整
+function generateNumber() {
+  // N個以上の履歴があり、40%の確率でN個前と同じ数字を出す
+  if (gameState.history.length >= gameState.nBack && Math.random() < 0.4) {
+    const nBackIndex = gameState.history.length - gameState.nBack;
+    return gameState.history[nBackIndex];
+  }
+
+  // それ以外は完全ランダム
+  return Math.floor(Math.random() * 10);
+}
+
+// ゲーム開始
+function startGame() {
+  const level = parseInt(document.querySelector('input[name="level"]:checked').value);
+  const count = parseInt(document.querySelector('input[name="count"]:checked').value);
+
+  gameState = {
+    isPlaying: true,
+    nBack: level,
+    currentProblem: 0,
+    totalProblems: count,
+    correctCount: 0,
+    incorrectCount: 0,
+    history: [],
+    canAnswer: false,
+    intervalId: null
+  };
+
+  document.getElementById('settings-panel').style.display = 'none';
+  document.getElementById('game-panel').style.display = 'block';
+  document.getElementById('result-panel').style.display = 'none';
+
+  document.getElementById('n-value').textContent = gameState.nBack;
+  document.getElementById('result-display').innerHTML = '';
+  document.getElementById('history-display').textContent = '';
+  updateStats();
+  startSequence();
+}
+
+// 問題シーケンスを開始
+function startSequence() {
+  let countdown = 3;
+  const display = document.getElementById('number-display');
+
+  // カウントダウン
+  const countdownInterval = setInterval(() => {
+    if (countdown > 0) {
+      display.textContent = countdown;
+      countdown--;
+    } else {
+      clearInterval(countdownInterval);
+      showNextNumber();
+    }
+  }, 1000);
+}
+
+// 次の数字を表示
+function showNextNumber() {
+  gameState.currentProblem++;
+
+  const newNumber = generateNumber();
+  gameState.history.push(newNumber);
+
+  const display = document.getElementById('number-display');
+  display.textContent = newNumber;
+  display.classList.add('flash');
+  setTimeout(() => display.classList.remove('flash'), 300);
+
+  // 履歴表示を更新
+  updateHistoryDisplay();
+
+  // プログレスバー更新
+  const progress = (gameState.currentProblem / gameState.totalProblems) * 100;
+  document.getElementById('progress-bar').style.width = progress + '%';
+  document.getElementById('current-problem').textContent = gameState.currentProblem;
+  document.getElementById('total-problems').textContent = gameState.totalProblems;
+
+  // N個以上の数字が出たら回答可能に
+  if (gameState.history.length > gameState.nBack) {
+    gameState.canAnswer = true;
+    document.getElementById('same-btn').disabled = false;
+    document.getElementById('different-btn').disabled = false;
+    document.getElementById('result-display').innerHTML = '<span style="color: var(--bs-info);">判定してください</span>';
+  } else {
+    gameState.canAnswer = false;
+    document.getElementById('same-btn').disabled = true;
+    document.getElementById('different-btn').disabled = true;
+    document.getElementById('result-display').innerHTML = '<span style="color: var(--bs-secondary);">ウォームアップ（回答不要）</span>';
+
+    // ウォームアップ中は自動で次へ
+    setTimeout(() => {
+      if (gameState.isPlaying && gameState.currentProblem < gameState.totalProblems) {
+        showNextNumber();
+      } else if (gameState.currentProblem >= gameState.totalProblems) {
+        endGame();
+      }
+    }, 1500);
+  }
+}
+
+// 履歴表示を更新
+function updateHistoryDisplay() {
+  const historyDisplay = document.getElementById('history-display');
+  const recentHistory = gameState.history.slice(-5).join(' → ');
+  historyDisplay.textContent = recentHistory;
+}
+
+// 回答処理
+function answer(userSaysSame) {
+  if (!gameState.canAnswer || !gameState.isPlaying) return;
+
+  gameState.canAnswer = false;
+  document.getElementById('same-btn').disabled = true;
+  document.getElementById('different-btn').disabled = true;
+
+  const currentIndex = gameState.history.length - 1;
+  const nBackIndex = currentIndex - gameState.nBack;
+
+  const currentNumber = gameState.history[currentIndex];
+  const nBackNumber = gameState.history[nBackIndex];
+
+  const actualSame = currentNumber === nBackNumber;
+  const isCorrect = userSaysSame === actualSame;
+
+  const resultDisplay = document.getElementById('result-display');
+
+  if (isCorrect) {
+    resultDisplay.innerHTML = '<span class="result-correct">✓ 正解!</span>';
+    gameState.correctCount++;
+  } else {
+    const correctAnswer = actualSame ? '同じ' : '違う';
+    resultDisplay.innerHTML = `<span class="result-incorrect">✗ 不正解（正解: ${correctAnswer}）</span>`;
+    gameState.incorrectCount++;
+  }
+
+  updateStats();
+
+  // 1秒後に次の数字を表示
+  setTimeout(() => {
+    if (gameState.isPlaying && gameState.currentProblem < gameState.totalProblems) {
+      showNextNumber();
+    } else if (gameState.currentProblem >= gameState.totalProblems) {
+      endGame();
+    }
+  }, 1000);
+}
+
+// 統計更新
+function updateStats() {
+  document.getElementById('correct-count').textContent = gameState.correctCount;
+  document.getElementById('incorrect-count').textContent = gameState.incorrectCount;
+
+  const total = gameState.correctCount + gameState.incorrectCount;
+  const accuracy = total > 0 ? Math.round((gameState.correctCount / total) * 100) : 0;
+  document.getElementById('accuracy').textContent = accuracy + '%';
+}
+
+// ゲーム終了
+function endGame() {
+  gameState.isPlaying = false;
+
+  if (gameState.intervalId) {
+    clearInterval(gameState.intervalId);
+    gameState.intervalId = null;
+  }
+
+  const total = gameState.correctCount + gameState.incorrectCount;
+  const accuracy = total > 0 ? Math.round((gameState.correctCount / total) * 100) : 0;
+
+  document.getElementById('final-level').textContent = gameState.nBack + '-Back';
+  document.getElementById('final-correct').textContent = gameState.correctCount;
+  document.getElementById('final-accuracy').textContent = accuracy + '%';
+  document.getElementById('final-total').textContent = total;
+
+  document.getElementById('game-panel').style.display = 'none';
+  document.getElementById('result-panel').style.display = 'block';
+}
+
+// 設定画面に戻る
+function showSettings() {
+  document.getElementById('settings-panel').style.display = 'block';
+  document.getElementById('game-panel').style.display = 'none';
+  document.getElementById('result-panel').style.display = 'none';
+
+  gameState.isPlaying = false;
+
+  if (gameState.intervalId) {
+    clearInterval(gameState.intervalId);
+    gameState.intervalId = null;
+  }
+}
+
+// キーボードショートカット
+document.addEventListener('keydown', (e) => {
+  if (!gameState.isPlaying || !gameState.canAnswer) return;
+
+  if (e.key === 's' || e.key === 'S' || e.key === '1') {
+    answer(true);
+  } else if (e.key === 'd' || e.key === 'D' || e.key === '2') {
+    answer(false);
+  }
+});
+
+// ページを離れる前に警告
+window.addEventListener('beforeunload', (e) => {
+  if (gameState.isPlaying) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+</script>
+</body>
+</html>
