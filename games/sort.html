@@ -407,11 +407,6 @@ function selectNumber(num) {
     return;
   }
 
-  // 表示された数字に含まれていない場合は無視
-  if (!gameState.currentNumbers.includes(num)) {
-    return;
-  }
-
   gameState.selectedNumbers.push(num);
   updateSelectedDisplay();
 
