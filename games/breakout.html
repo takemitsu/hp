@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ブロック崩し</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    button {
+      touch-action: manipulation;
+    }
+
+    #gameCanvas {
+      border: 3px solid var(--bs-primary);
+      border-radius: 0.5rem;
+      background: #000;
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      touch-action: none;
+    }
+
+    .stats-card {
+      text-align: center;
+      padding: 1rem;
+    }
+
+    .stats-number {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .settings-panel {
+      background-color: var(--bs-secondary-bg-subtle);
+      border-radius: 0.375rem;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .control-btn {
+      font-size: 2rem;
+      font-weight: bold;
+      height: 80px;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    @media (max-width: 576px) {
+      .stats-number {
+        font-size: 1.5rem;
+      }
+
+      .control-btn {
+        font-size: 1.5rem;
+        height: 60px;
+      }
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar bg-body-tertiary" id="header" aria-label="header">
+  <div class="container-fluid justify-content-start">
+    <a class="navbar-brand" href="/">takemitsu.net</a>
+    <div class="nav-text">ブロック崩し</div>
+
+    <ul class="navbar-nav flex-row ms-auto mb-2 mb-lg-0">
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('dark')">dark</a></li>
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('light')">light</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container mt-3">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8">
+
+      <!-- 設定パネル -->
+      <div class="settings-panel" id="settings-panel">
+        <h5 class="mb-3">ゲーム説明</h5>
+
+        <div class="alert alert-info">
+          <strong>ブロック崩し</strong><br>
+          昔ながらのシンプルなブロック崩しゲーム。<br>
+          パドルを操作してボールを跳ね返し、全てのブロックを破壊しよう！
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">ボール持ち越し上限</label>
+          <div class="btn-group w-100" role="group">
+            <input type="radio" class="btn-check" name="ballLimit" id="limit5" value="5" checked>
+            <label class="btn btn-outline-primary" for="limit5" style="touch-action: manipulation;">5個</label>
+            <input type="radio" class="btn-check" name="ballLimit" id="limit10" value="10">
+            <label class="btn btn-outline-primary" for="limit10" style="touch-action: manipulation;">10個</label>
+            <input type="radio" class="btn-check" name="ballLimit" id="limitMax" value="999">
+            <label class="btn btn-outline-primary" for="limitMax" style="touch-action: manipulation;">無制限</label>
+          </div>
+          <small class="text-muted">次のウェーブに持ち越せるボールの最大数</small>
+        </div>
+
+        <div class="d-grid">
+          <button class="btn btn-primary btn-lg" onclick="startGame()">ゲーム開始</button>
+        </div>
+      </div>
+
+      <!-- ゲーム画面 -->
+      <div id="game-panel" style="display: none;">
+        <div class="card mb-2">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span>Wave <span id="current-wave">1</span></span>
+              <span>Score: <span id="score">0</span></span>
+            </div>
+
+            <canvas id="gameCanvas" width="600" height="400"></canvas>
+
+            <div class="row g-2 mt-3">
+              <div class="col-6">
+                <button class="btn btn-primary control-btn w-100" id="leftBtn">← LEFT</button>
+              </div>
+              <div class="col-6">
+                <button class="btn btn-primary control-btn w-100" id="rightBtn">RIGHT →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 統計情報 -->
+        <div class="row g-2">
+          <div class="col-4">
+            <div class="card stats-card">
+              <div class="stats-number text-info" id="ball-count">1</div>
+              <small>現在ボール</small>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="card stats-card">
+              <div class="stats-number text-primary" id="ball-max">5</div>
+              <small>持越上限</small>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="card stats-card">
+              <div class="stats-number text-success" id="blocks-left">0</div>
+              <small>残ブロック</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 結果画面 -->
+      <div class="card" id="result-panel" style="display: none;">
+        <div class="card-body text-center">
+          <h3 class="mb-4">Game Over</h3>
+
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number text-success" id="final-wave">0</div>
+                <small>到達Wave</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="card stats-card">
+                <div class="stats-number text-primary" id="final-score">0</div>
+                <small>スコア</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-grid">
+            <button class="btn btn-primary" onclick="showSettings()">もう一度</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-info mt-3" role="alert">
+        <h5 class="alert-heading">遊び方</h5>
+        <p class="mb-0">
+          <strong>1.</strong> 左右ボタンでパドルを操作<br>
+          <strong>2.</strong> 画面タップ/クリック/スペースキーでボール発射<br>
+          <strong>3.</strong> 全てのブロックを破壊してウェーブをクリア
+        </p>
+      </div>
+
+      <div class="alert alert-secondary mt-3" role="alert">
+        <p class="mb-0 text-center">
+          💡 ゲームのアイディア募集中！
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../setTheme.mini.js"></script>
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// ゲーム状態
+let gameState = {
+  isPlaying: false,
+  wave: 0,
+  score: 0,
+  paddle: null,
+  balls: [],
+  blocks: [],
+  keys: { left: false, right: false },
+  isTransitioning: false,  // ウェーブ切り替え中フラグ
+  maxBallCarryover: 5,     // ボール持ち越し上限
+  // 壊れ要素の強度
+  angleRandomness: 0,      // 反射角ランダム度 (0-1)
+  speedVariation: 0,       // 速度変化 (0-1)
+  blockMovement: 0,        // ブロック移動速度
+  paddleShrink: 1,         // パドルサイズ倍率 (1-0.25)
+  blockRespawn: false      // ブロック増殖
+};
+
+// パドル
+class Paddle {
+  constructor() {
+    this.baseWidth = 300;
+    this.width = this.baseWidth;
+    this.height = 15;
+    this.x = canvas.width / 2 - this.width / 2;
+    this.y = canvas.height - 30;
+    this.speed = 8;
+  }
+
+  update() {
+    this.width = this.baseWidth * gameState.paddleShrink;
+
+    if (gameState.keys.left && this.x > 0) {
+      this.x -= this.speed;
+    }
+    if (gameState.keys.right && this.x < canvas.width - this.width) {
+      this.x += this.speed;
+    }
+  }
+
+  draw() {
+    ctx.fillStyle = '#4CAF50';
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+}
+
+// ボール
+class Ball {
+  constructor(x, y, dx, dy) {
+    this.x = x || canvas.width / 2;
+    this.y = y || canvas.height - 60;
+    this.radius = 6;
+    this.baseSpeed = 6;
+    this.dx = dx || 0;
+    this.dy = dy || 0;
+    this.isLaunched = (dx !== undefined && dy !== undefined); // 発射済みフラグ
+  }
+
+  update() {
+    // 未発射の場合はパドルに追従
+    if (!this.isLaunched) {
+      const paddle = gameState.paddle;
+      this.x = paddle.x + paddle.width / 2;
+      this.y = paddle.y - this.radius;
+      return false;
+    }
+
+    this.x += this.dx;
+    this.y += this.dy;
+
+    // 壁反射
+    if (this.x - this.radius < 0 || this.x + this.radius > canvas.width) {
+      this.dx = -this.dx;
+      this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
+    }
+    if (this.y - this.radius < 0) {
+      this.dy = -this.dy;
+      this.y = this.radius;
+    }
+
+    // パドル反射
+    const paddle = gameState.paddle;
+    if (this.y + this.radius >= paddle.y &&
+        this.y - this.radius < paddle.y + paddle.height &&
+        this.x >= paddle.x &&
+        this.x <= paddle.x + paddle.width) {
+
+      this.dy = -Math.abs(this.dy);
+      this.y = paddle.y - this.radius;
+
+      // 反射角の計算（パドルのどこに当たったか）
+      const hitPos = (this.x - paddle.x) / paddle.width; // 0-1
+      const angle = (hitPos - 0.5) * Math.PI / 3; // -60度〜+60度
+
+      // 壊れ要素：ランダム角度追加
+      const randomAngle = (Math.random() - 0.5) * Math.PI * gameState.angleRandomness;
+      const finalAngle = angle + randomAngle;
+
+      const speed = this.baseSpeed;
+      this.dx = speed * Math.sin(finalAngle);
+      this.dy = -speed * Math.cos(finalAngle);
+
+      // 最低Y速度を保証（水平に近すぎる角度を防ぐ）
+      const minYSpeed = this.baseSpeed * 0.5;
+      if (Math.abs(this.dy) < minYSpeed) {
+        this.dy = this.dy < 0 ? -minYSpeed : minYSpeed;
+      }
+
+      // 壊れ要素：速度変化
+      if (gameState.speedVariation > 0) {
+        const speedMult = 1 + (Math.random() - 0.5) * gameState.speedVariation;
+        this.dx *= speedMult;
+        this.dy *= speedMult;
+      }
+    }
+
+    // ブロック衝突
+    for (let i = gameState.blocks.length - 1; i >= 0; i--) {
+      const block = gameState.blocks[i];
+      if (!block.destroyed && this.collidesWith(block)) {
+        this.handleBlockCollision(block);
+
+        // ブロックにダメージ
+        const isDestroyed = block.hit();
+
+        if (isDestroyed) {
+          gameState.blocks.splice(i, 1);
+          gameState.score += block.isSpecial ? 50 : (10 * block.maxHp);
+
+          // 特殊ブロック：ボール増殖
+          if (block.isSpecial) {
+            this.explode();
+          }
+        } else {
+          // まだ壊れていない場合はスコアだけ加算
+          gameState.score += 5;
+        }
+      }
+    }
+
+    // 画面下に落ちた
+    return this.y - this.radius > canvas.height;
+  }
+
+  collidesWith(block) {
+    return this.x + this.radius > block.x &&
+           this.x - this.radius < block.x + block.width &&
+           this.y + this.radius > block.y &&
+           this.y - this.radius < block.y + block.height;
+  }
+
+  handleBlockCollision(block) {
+    // より精密な反射判定
+    const prevX = this.x - this.dx;
+    const prevY = this.y - this.dy;
+
+    // ボールの前の位置から、どの面に当たったかを判定
+    const fromLeft = prevX < block.x;
+    const fromRight = prevX > block.x + block.width;
+    const fromTop = prevY < block.y;
+    const fromBottom = prevY > block.y + block.height;
+
+    // 左右の面に当たった
+    if (fromLeft || fromRight) {
+      this.dx = -this.dx;
+      // ブロックの中にめり込んでいたら押し出す
+      if (fromLeft) {
+        this.x = block.x - this.radius;
+      } else {
+        this.x = block.x + block.width + this.radius;
+      }
+    }
+
+    // 上下の面に当たった
+    if (fromTop || fromBottom) {
+      this.dy = -this.dy;
+      // ブロックの中にめり込んでいたら押し出す
+      if (fromTop) {
+        this.y = block.y - this.radius;
+      } else {
+        this.y = block.y + block.height + this.radius;
+      }
+    }
+
+    // どの面からも来ていない場合（角に当たった）は両方反転
+    if (!fromLeft && !fromRight && !fromTop && !fromBottom) {
+      this.dx = -this.dx;
+      this.dy = -this.dy;
+    }
+  }
+
+  explode() {
+    // ボールを20〜30個に増殖
+    const count = 20 + Math.floor(Math.random() * 11);
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count;
+      const speed = this.baseSpeed;
+      const dx = speed * Math.cos(angle);
+      const dy = speed * Math.sin(angle);
+      gameState.balls.push(new Ball(this.x, this.y, dx, dy));
+    }
+  }
+
+  draw() {
+    ctx.fillStyle = '#FFF';
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ブロック
+class Block {
+  constructor(x, y, isSpecial = false, hp = 1) {
+    this.x = x;
+    this.y = y;
+    this.width = 50;
+    this.height = 20;
+    this.isSpecial = isSpecial;
+    this.hp = hp; // 耐久力
+    this.maxHp = hp; // 最大HP（色の判定用）
+    this.destroyed = false;
+    this.moveDir = Math.random() < 0.5 ? -1 : 1;
+  }
+
+  hit() {
+    // ダメージを受ける
+    this.hp--;
+    return this.hp <= 0; // 破壊されたらtrue
+  }
+
+  update() {
+    // 壊れ要素：ブロック移動
+    if (gameState.blockMovement > 0) {
+      this.x += this.moveDir * gameState.blockMovement;
+
+      // 画面端で反転
+      if (this.x < 0 || this.x + this.width > canvas.width) {
+        this.moveDir *= -1;
+        this.x = Math.max(0, Math.min(canvas.width - this.width, this.x));
+      }
+    }
+  }
+
+  draw() {
+    if (this.isSpecial) {
+      // 虹色のグラデーション
+      const gradient = ctx.createLinearGradient(this.x, this.y, this.x + this.width, this.y + this.height);
+      gradient.addColorStop(0, '#FF0000');
+      gradient.addColorStop(0.33, '#00FF00');
+      gradient.addColorStop(0.66, '#0000FF');
+      gradient.addColorStop(1, '#FF00FF');
+      ctx.fillStyle = gradient;
+    } else {
+      // HPに応じて色を変える
+      if (this.maxHp === 1) {
+        ctx.fillStyle = '#2196F3'; // 青（通常）
+      } else if (this.maxHp === 2) {
+        ctx.fillStyle = this.hp === 2 ? '#FFA500' : '#FFD700'; // オレンジ→黄色
+      } else if (this.maxHp === 3) {
+        if (this.hp === 3) ctx.fillStyle = '#FF4500'; // 赤
+        else if (this.hp === 2) ctx.fillStyle = '#FF6347'; // 薄い赤
+        else ctx.fillStyle = '#FFB6C1'; // ピンク
+      } else {
+        // HP4以上は紫系
+        const ratio = this.hp / this.maxHp;
+        const brightness = Math.floor(100 + ratio * 100);
+        ctx.fillStyle = `rgb(${brightness}, 0, ${brightness})`;
+      }
+    }
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+    ctx.strokeStyle = '#000';
+    ctx.strokeRect(this.x, this.y, this.width, this.height);
+
+    // HP表示（HP2以上の場合）
+    if (!this.isSpecial && this.maxHp > 1) {
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(this.hp, this.x + this.width / 2, this.y + this.height / 2);
+    }
+  }
+}
+
+// ブロック配置生成
+function generateBlocks(wave) {
+  const blocks = [];
+  const maxRows = 8; // 最大8行（画面内に収まる）
+  const rows = Math.min(maxRows, 3 + Math.floor(wave / 3));
+  const cols = 10;
+  const padding = 10;
+  const offsetX = (canvas.width - (cols * 60)) / 2;
+  const offsetY = 50;
+
+  // 通常ブロックを配置（HPはWaveに応じて変化）
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      if (Math.random() < 0.7) { // 70%の確率で配置
+        const x = offsetX + col * 60 + padding;
+        const y = offsetY + row * 30 + padding;
+
+        // Wave数に応じて耐久力の高いブロックが出現（段階的に確率UP）
+        let hp = 1;
+
+        // HP2の確率: Wave 5で20% → Wave 10で40% → Wave 20で80%
+        if (wave >= 5) {
+          const hp2Chance = Math.min(0.8, 0.2 + (wave - 5) * 0.04);
+          if (Math.random() < hp2Chance) hp = 2;
+        }
+
+        // HP3の確率: Wave 10で10% → Wave 15で25% → Wave 25で50%
+        if (wave >= 10 && hp === 1) {
+          const hp3Chance = Math.min(0.5, 0.1 + (wave - 10) * 0.03);
+          if (Math.random() < hp3Chance) hp = 3;
+        }
+
+        // HP4の確率: Wave 15で5% → Wave 20で15% → Wave 30で30%
+        if (wave >= 15 && hp === 1) {
+          const hp4Chance = Math.min(0.3, 0.05 + (wave - 15) * 0.02);
+          if (Math.random() < hp4Chance) hp = 4;
+        }
+
+        blocks.push(new Block(x, y, false, hp));
+      }
+    }
+  }
+
+  // 虹色ブロック数を計算: 1 + (wave進行度 × 割合), 最大5個
+  const specialCount = Math.min(5, 1 + Math.floor(wave / 5));
+
+  // ランダムにspecialCount個を虹色にする
+  if (blocks.length > 0) {
+    const actualSpecialCount = Math.min(specialCount, blocks.length);
+    const shuffled = [...blocks].sort(() => Math.random() - 0.5);
+    for (let i = 0; i < actualSpecialCount; i++) {
+      shuffled[i].isSpecial = true;
+    }
+  }
+
+  return blocks;
+}
+
+// ウェーブ開始
+function startWave() {
+  gameState.wave++;
+  gameState.blocks = generateBlocks(gameState.wave);
+
+  // Wave 1は持ち越し上限数のボールで開始、それ以降は持ち越し
+  if (gameState.wave === 1) {
+    gameState.balls = [];
+    for (let i = 0; i < gameState.maxBallCarryover; i++) {
+      gameState.balls.push(new Ball());
+    }
+  } else {
+    // 持ち越し上限を適用
+    if (gameState.balls.length > gameState.maxBallCarryover) {
+      gameState.balls = gameState.balls.slice(0, gameState.maxBallCarryover);
+    }
+
+    // 既存のボールを全て未発射状態に
+    for (const ball of gameState.balls) {
+      ball.isLaunched = false;
+      ball.dx = 0;
+      ball.dy = 0;
+    }
+  }
+
+  // 壊れ要素の強度を段階的に上げる（もっと早く強く）
+  const wave = gameState.wave;
+
+  if (wave >= 2) gameState.angleRandomness = Math.min(0.5, (wave - 1) * 0.2);
+  if (wave >= 3) gameState.speedVariation = Math.min(1.2, (wave - 2) * 0.3);
+  if (wave >= 4) gameState.blockMovement = Math.min(3, (wave - 3) * 0.5);
+  if (wave >= 5) gameState.paddleShrink = Math.max(0.3, 1 - (wave - 4) * 0.12);
+  if (wave >= 6) gameState.angleRandomness = Math.min(1.5, (wave - 5) * 0.3 + 0.5);
+
+  updateStats();
+}
+
+// 統計更新
+function updateStats() {
+  document.getElementById('current-wave').textContent = gameState.wave;
+  document.getElementById('score').textContent = gameState.score;
+  document.getElementById('ball-count').textContent = gameState.balls.length;
+  document.getElementById('ball-max').textContent = gameState.maxBallCarryover === 999 ? '∞' : gameState.maxBallCarryover;
+  document.getElementById('blocks-left').textContent = gameState.blocks.length;
+}
+
+// ゲームループ
+function gameLoop() {
+  if (!gameState.isPlaying) return;
+
+  // クリア
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // 更新
+  gameState.paddle.update();
+
+  for (const block of gameState.blocks) {
+    block.update();
+  }
+
+  for (let i = gameState.balls.length - 1; i >= 0; i--) {
+    const isDead = gameState.balls[i].update();
+    if (isDead) {
+      gameState.balls.splice(i, 1);
+    }
+  }
+
+  // 描画
+  gameState.paddle.draw();
+
+  for (const block of gameState.blocks) {
+    block.draw();
+  }
+
+  for (const ball of gameState.balls) {
+    ball.draw();
+  }
+
+  // 統計更新
+  updateStats();
+
+  // ゲームオーバー判定
+  if (gameState.balls.length === 0) {
+    endGame();
+    return;
+  }
+
+  // ウェーブクリア判定（全ブロック破壊）
+  if (gameState.blocks.length === 0 && gameState.balls.length > 0 && !gameState.isTransitioning) {
+    gameState.isTransitioning = true;
+    setTimeout(() => {
+      gameState.isTransitioning = false;
+      startWave();
+    }, 1000);
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ゲーム開始
+function startGame() {
+  const ballLimit = parseInt(document.querySelector('input[name="ballLimit"]:checked').value);
+
+  gameState = {
+    isPlaying: true,
+    wave: 0,
+    score: 0,
+    paddle: new Paddle(),
+    balls: [],
+    blocks: [],
+    keys: { left: false, right: false },
+    isTransitioning: false,
+    maxBallCarryover: ballLimit,
+    angleRandomness: 0,
+    speedVariation: 0,
+    blockMovement: 0,
+    paddleShrink: 1,
+    blockRespawn: false
+  };
+
+  document.getElementById('settings-panel').style.display = 'none';
+  document.getElementById('game-panel').style.display = 'block';
+  document.getElementById('result-panel').style.display = 'none';
+
+  startWave();
+  gameLoop();
+}
+
+// ゲーム終了
+function endGame() {
+  gameState.isPlaying = false;
+
+  document.getElementById('final-wave').textContent = gameState.wave;
+  document.getElementById('final-score').textContent = gameState.score;
+
+  document.getElementById('game-panel').style.display = 'none';
+  document.getElementById('result-panel').style.display = 'block';
+}
+
+// 設定画面に戻る
+function showSettings() {
+  document.getElementById('settings-panel').style.display = 'block';
+  document.getElementById('game-panel').style.display = 'none';
+  document.getElementById('result-panel').style.display = 'none';
+  gameState.isPlaying = false;
+}
+
+// 操作
+const leftBtn = document.getElementById('leftBtn');
+const rightBtn = document.getElementById('rightBtn');
+
+leftBtn.addEventListener('mousedown', () => gameState.keys.left = true);
+leftBtn.addEventListener('mouseup', () => gameState.keys.left = false);
+leftBtn.addEventListener('mouseleave', () => gameState.keys.left = false);
+leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); gameState.keys.left = true; });
+leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); gameState.keys.left = false; });
+
+rightBtn.addEventListener('mousedown', () => gameState.keys.right = true);
+rightBtn.addEventListener('mouseup', () => gameState.keys.right = false);
+rightBtn.addEventListener('mouseleave', () => gameState.keys.right = false);
+rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); gameState.keys.right = true; });
+rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); gameState.keys.right = false; });
+
+// キーボード操作
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') gameState.keys.left = true;
+  if (e.key === 'ArrowRight' || e.key === 'd') gameState.keys.right = true;
+  if (e.key === ' ') {
+    e.preventDefault(); // スペースキーのスクロールを無効化
+    launchBall();
+  }
+});
+
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') gameState.keys.left = false;
+  if (e.key === 'ArrowRight' || e.key === 'd') gameState.keys.right = false;
+});
+
+// ボール発射
+function launchBall() {
+  if (!gameState.isPlaying) return;
+
+  for (const ball of gameState.balls) {
+    if (!ball.isLaunched) {
+      ball.isLaunched = true;
+      ball.dx = ball.baseSpeed * (Math.random() - 0.5) * 0.5; // 少しランダムに
+      ball.dy = -ball.baseSpeed;
+    }
+  }
+}
+
+// キャンバスクリック/タップで発射
+canvas.addEventListener('click', launchBall);
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  launchBall();
+});
+</script>
+</body>
+</html>
