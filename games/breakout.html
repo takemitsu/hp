@@ -95,10 +95,10 @@
         <div class="mb-3">
           <label class="form-label">ボール持ち越し上限</label>
           <div class="btn-group w-100" role="group">
-            <input type="radio" class="btn-check" name="ballLimit" id="limit5" value="5" checked>
-            <label class="btn btn-outline-primary" for="limit5" style="touch-action: manipulation;">5個</label>
-            <input type="radio" class="btn-check" name="ballLimit" id="limit10" value="10">
+            <input type="radio" class="btn-check" name="ballLimit" id="limit10" value="10" checked>
             <label class="btn btn-outline-primary" for="limit10" style="touch-action: manipulation;">10個</label>
+            <input type="radio" class="btn-check" name="ballLimit" id="limit20" value="20">
+            <label class="btn btn-outline-primary" for="limit20" style="touch-action: manipulation;">20個</label>
             <input type="radio" class="btn-check" name="ballLimit" id="limitMax" value="999">
             <label class="btn btn-outline-primary" for="limitMax" style="touch-action: manipulation;">無制限</label>
           </div>
@@ -119,7 +119,7 @@
               <span>Score: <span id="score">0</span></span>
             </div>
 
-            <canvas id="gameCanvas" width="600" height="400"></canvas>
+            <canvas id="gameCanvas" width="600" height="800"></canvas>
 
             <div class="row g-2 mt-3">
               <div class="col-6">
@@ -142,7 +142,7 @@
           </div>
           <div class="col-4">
             <div class="card stats-card">
-              <div class="stats-number text-primary" id="ball-max">5</div>
+              <div class="stats-number text-primary" id="ball-max">10</div>
               <small>持越上限</small>
             </div>
           </div>
@@ -184,7 +184,7 @@
       <div class="alert alert-info mt-3" role="alert">
         <h5 class="alert-heading">遊び方</h5>
         <p class="mb-0">
-          <strong>1.</strong> 左右ボタンでパドルを操作<br>
+          <strong>1.</strong> 左右ボタン、または画面タッチ（ドラッグ）でパドルを操作<br>
           <strong>2.</strong> 画面タップ/クリック/スペースキーでボール発射<br>
           <strong>3.</strong> 全てのブロックを破壊してウェーブをクリア
         </p>
@@ -215,7 +215,7 @@ let gameState = {
   blocks: [],
   keys: { left: false, right: false },
   isTransitioning: false,  // ウェーブ切り替え中フラグ
-  maxBallCarryover: 5,     // ボール持ち越し上限
+  maxBallCarryover: 10,    // ボール持ち越し上限
   // 壊れ要素の強度
   angleRandomness: 0,      // 反射角ランダム度 (0-1)
   speedVariation: 0,       // 速度変化 (0-1)
@@ -233,10 +233,15 @@ class Paddle {
     this.x = canvas.width / 2 - this.width / 2;
     this.y = canvas.height - 30;
     this.speed = 8;
+    this.prevX = this.x; // 前フレームのX座標
+    this.velocity = 0;   // パドルの速度
   }
 
   update() {
     this.width = this.baseWidth * gameState.paddleShrink;
+
+    // 前フレームの位置を記録
+    this.prevX = this.x;
 
     if (gameState.keys.left && this.x > 0) {
       this.x -= this.speed;
@@ -244,6 +249,9 @@ class Paddle {
     if (gameState.keys.right && this.x < canvas.width - this.width) {
       this.x += this.speed;
     }
+
+    // パドルの速度を計算
+    this.velocity = this.x - this.prevX;
   }
 
   draw() {
@@ -308,6 +316,10 @@ class Ball {
       this.dx = speed * Math.sin(finalAngle);
       this.dy = -speed * Math.cos(finalAngle);
 
+      // パドルの動きによる摩擦効果（英語をかける）
+      const frictionFactor = 0.3; // 摩擦の強さ（0-1）
+      this.dx += paddle.velocity * frictionFactor;
+
       // 最低Y速度を保証（水平に近すぎる角度を防ぐ）
       const minYSpeed = this.baseSpeed * 0.5;
       if (Math.abs(this.dy) < minYSpeed) {
@@ -338,6 +350,13 @@ class Ball {
           // 特殊ブロック：ボール増殖
           if (block.isSpecial) {
             this.explode();
+          }
+
+          // ブロック破壊時にランダムでボール加速（30%の確率）
+          if (Math.random() < 0.3) {
+            const speedBoost = 1.2;
+            this.dx *= speedBoost;
+            this.dy *= speedBoost;
           }
         } else {
           // まだ壊れていない場合はスコアだけ加算
@@ -419,12 +438,13 @@ class Ball {
 
 // ブロック
 class Block {
-  constructor(x, y, isSpecial = false, hp = 1) {
+  constructor(x, y, isSpecial = false, hp = 1, isIndestructible = false) {
     this.x = x;
     this.y = y;
     this.width = 50;
     this.height = 20;
     this.isSpecial = isSpecial;
+    this.isIndestructible = isIndestructible; // 壊れないブロック
     this.hp = hp; // 耐久力
     this.maxHp = hp; // 最大HP（色の判定用）
     this.destroyed = false;
@@ -432,12 +452,18 @@ class Block {
   }
 
   hit() {
+    // 壊れないブロックはダメージを受けない
+    if (this.isIndestructible) return false;
+
     // ダメージを受ける
     this.hp--;
     return this.hp <= 0; // 破壊されたらtrue
   }
 
   update() {
+    // 壊れないブロックは移動しない
+    if (this.isIndestructible) return;
+
     // 壊れ要素：ブロック移動
     if (gameState.blockMovement > 0) {
       this.x += this.moveDir * gameState.blockMovement;
@@ -451,7 +477,26 @@ class Block {
   }
 
   draw() {
-    if (this.isSpecial) {
+    if (this.isIndestructible) {
+      // 壊れないブロック（灰色）
+      ctx.fillStyle = '#555';
+      ctx.fillRect(this.x, this.y, this.width, this.height);
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(this.x, this.y, this.width, this.height);
+      ctx.lineWidth = 1;
+
+      // Xマークを描画
+      ctx.strokeStyle = '#888';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(this.x + 5, this.y + 5);
+      ctx.lineTo(this.x + this.width - 5, this.y + this.height - 5);
+      ctx.moveTo(this.x + this.width - 5, this.y + 5);
+      ctx.lineTo(this.x + 5, this.y + this.height - 5);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    } else if (this.isSpecial) {
       // 虹色のグラデーション
       const gradient = ctx.createLinearGradient(this.x, this.y, this.x + this.width, this.y + this.height);
       gradient.addColorStop(0, '#FF0000');
@@ -459,6 +504,9 @@ class Block {
       gradient.addColorStop(0.66, '#0000FF');
       gradient.addColorStop(1, '#FF00FF');
       ctx.fillStyle = gradient;
+      ctx.fillRect(this.x, this.y, this.width, this.height);
+      ctx.strokeStyle = '#000';
+      ctx.strokeRect(this.x, this.y, this.width, this.height);
     } else {
       // HPに応じて色を変える
       if (this.maxHp === 1) {
@@ -475,18 +523,18 @@ class Block {
         const brightness = Math.floor(100 + ratio * 100);
         ctx.fillStyle = `rgb(${brightness}, 0, ${brightness})`;
       }
-    }
-    ctx.fillRect(this.x, this.y, this.width, this.height);
-    ctx.strokeStyle = '#000';
-    ctx.strokeRect(this.x, this.y, this.width, this.height);
+      ctx.fillRect(this.x, this.y, this.width, this.height);
+      ctx.strokeStyle = '#000';
+      ctx.strokeRect(this.x, this.y, this.width, this.height);
 
-    // HP表示（HP2以上の場合）
-    if (!this.isSpecial && this.maxHp > 1) {
-      ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 14px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(this.hp, this.x + this.width / 2, this.y + this.height / 2);
+      // HP表示（HP2以上の場合）
+      if (this.maxHp > 1) {
+        ctx.fillStyle = '#FFF';
+        ctx.font = 'bold 14px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.hp, this.x + this.width / 2, this.y + this.height / 2);
+      }
     }
   }
 }
@@ -494,7 +542,7 @@ class Block {
 // ブロック配置生成
 function generateBlocks(wave) {
   const blocks = [];
-  const maxRows = 8; // 最大8行（画面内に収まる）
+  const maxRows = 16; // 最大16行（画面高さ2倍）
   const rows = Math.min(maxRows, 3 + Math.floor(wave / 3));
   const cols = 10;
   const padding = 10;
@@ -534,13 +582,42 @@ function generateBlocks(wave) {
     }
   }
 
+  // 壊れないブロックを追加（Wave 3から）
+  // 既存ブロックと重ならない位置に配置
+  if (wave >= 3) {
+    const indestructibleCount = Math.min(10, Math.floor((wave - 2) / 2));
+    const occupiedPositions = new Set();
+
+    // 既存ブロックの位置を記録
+    blocks.forEach(block => {
+      occupiedPositions.add(`${block.x},${block.y}`);
+    });
+
+    let attempts = 0;
+    let placed = 0;
+    while (placed < indestructibleCount && attempts < 100) {
+      const x = offsetX + Math.floor(Math.random() * cols) * 60 + padding;
+      const y = offsetY + Math.floor(Math.random() * rows) * 30 + padding;
+      const posKey = `${x},${y}`;
+
+      // 重複していなければ配置
+      if (!occupiedPositions.has(posKey)) {
+        blocks.push(new Block(x, y, false, 1, true));
+        occupiedPositions.add(posKey);
+        placed++;
+      }
+      attempts++;
+    }
+  }
+
   // 虹色ブロック数を計算: 1 + (wave進行度 × 割合), 最大5個
   const specialCount = Math.min(5, 1 + Math.floor(wave / 5));
 
-  // ランダムにspecialCount個を虹色にする
-  if (blocks.length > 0) {
-    const actualSpecialCount = Math.min(specialCount, blocks.length);
-    const shuffled = [...blocks].sort(() => Math.random() - 0.5);
+  // ランダムにspecialCount個を虹色にする（壊れないブロック以外から）
+  const destructibleBlocks = blocks.filter(b => !b.isIndestructible);
+  if (destructibleBlocks.length > 0) {
+    const actualSpecialCount = Math.min(specialCount, destructibleBlocks.length);
+    const shuffled = [...destructibleBlocks].sort(() => Math.random() - 0.5);
     for (let i = 0; i < actualSpecialCount; i++) {
       shuffled[i].isSpecial = true;
     }
@@ -580,7 +657,7 @@ function startWave() {
   if (wave >= 2) gameState.angleRandomness = Math.min(0.5, (wave - 1) * 0.2);
   if (wave >= 3) gameState.speedVariation = Math.min(1.2, (wave - 2) * 0.3);
   if (wave >= 4) gameState.blockMovement = Math.min(3, (wave - 3) * 0.5);
-  if (wave >= 5) gameState.paddleShrink = Math.max(0.3, 1 - (wave - 4) * 0.12);
+  if (wave >= 5) gameState.paddleShrink = Math.max(0.3, 1 - (wave - 4) * 0.06);
   if (wave >= 6) gameState.angleRandomness = Math.min(1.5, (wave - 5) * 0.3 + 0.5);
 
   updateStats();
@@ -592,7 +669,10 @@ function updateStats() {
   document.getElementById('score').textContent = gameState.score;
   document.getElementById('ball-count').textContent = gameState.balls.length;
   document.getElementById('ball-max').textContent = gameState.maxBallCarryover === 999 ? '∞' : gameState.maxBallCarryover;
-  document.getElementById('blocks-left').textContent = gameState.blocks.length;
+
+  // 残ブロック数は壊れないブロックを除く
+  const destructibleBlocks = gameState.blocks.filter(b => !b.isIndestructible).length;
+  document.getElementById('blocks-left').textContent = destructibleBlocks;
 }
 
 // ゲームループ
@@ -637,8 +717,9 @@ function gameLoop() {
     return;
   }
 
-  // ウェーブクリア判定（全ブロック破壊）
-  if (gameState.blocks.length === 0 && gameState.balls.length > 0 && !gameState.isTransitioning) {
+  // ウェーブクリア判定（壊れないブロック以外を全て破壊）
+  const destructibleBlocks = gameState.blocks.filter(b => !b.isIndestructible);
+  if (destructibleBlocks.length === 0 && gameState.balls.length > 0 && !gameState.isTransitioning) {
     gameState.isTransitioning = true;
     setTimeout(() => {
       gameState.isTransitioning = false;
@@ -736,7 +817,9 @@ function launchBall() {
     if (!ball.isLaunched) {
       ball.isLaunched = true;
       ball.dx = ball.baseSpeed * (Math.random() - 0.5) * 0.5; // 少しランダムに
-      ball.dy = -ball.baseSpeed;
+      // Y方向のスピードもバラつかせる（0.8〜1.2倍）
+      const speedVariation = 0.8 + Math.random() * 0.4;
+      ball.dy = -ball.baseSpeed * speedVariation;
     }
   }
 }
@@ -746,6 +829,23 @@ canvas.addEventListener('click', launchBall);
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
   launchBall();
+});
+
+// タッチドラッグでパドル移動
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if (!gameState.isPlaying || !gameState.paddle) return;
+
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const touchX = (touch.clientX - rect.left) * scaleX;
+
+  // パドルの中心が指の位置になるように設定
+  gameState.paddle.x = touchX - gameState.paddle.width / 2;
+
+  // 画面外に出ないようにクランプ
+  gameState.paddle.x = Math.max(0, Math.min(canvas.width - gameState.paddle.width, gameState.paddle.x));
 });
 </script>
 </body>
