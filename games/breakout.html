@@ -46,9 +46,9 @@
     }
 
     .control-btn {
-      font-size: 2rem;
+      font-size: 1.75rem;
       font-weight: bold;
-      height: 80px;
+      height: 52px;
       touch-action: manipulation;
       user-select: none;
     }
@@ -59,8 +59,8 @@
       }
 
       .control-btn {
-        font-size: 1.5rem;
-        height: 60px;
+        font-size: 1.25rem;
+        height: 42px;
       }
     }
   </style>
@@ -119,7 +119,7 @@
               <span>Score: <span id="score">0</span></span>
             </div>
 
-            <canvas id="gameCanvas" width="600" height="800"></canvas>
+            <canvas id="gameCanvas" width="600" height="820"></canvas>
 
             <div class="row g-2 mt-3">
               <div class="col-6">
@@ -219,9 +219,10 @@ let gameState = {
   // 壊れ要素の強度
   angleRandomness: 0,      // 反射角ランダム度 (0-1)
   speedVariation: 0,       // 速度変化 (0-1)
-  blockMovement: 0,        // ブロック移動速度
+  blockMovement: 0,        // ブロック移動速度（ピクセル/秒）
   paddleShrink: 1,         // パドルサイズ倍率 (1-0.25)
-  blockRespawn: false      // ブロック増殖
+  blockRespawn: false,     // ブロック増殖
+  lastTime: 0              // 前フレームのタイムスタンプ
 };
 
 // パドル
@@ -231,27 +232,30 @@ class Paddle {
     this.width = this.baseWidth;
     this.height = 15;
     this.x = canvas.width / 2 - this.width / 2;
-    this.y = canvas.height - 30;
-    this.speed = 8;
+    this.y = canvas.height - 90; // 画面下から90pxの位置に（指1本分の余白）
+    this.speed = 480; // ピクセル/秒
     this.prevX = this.x; // 前フレームのX座標
-    this.velocity = 0;   // パドルの速度
+    this.velocity = 0;   // パドルの速度（ピクセル/秒）
   }
 
-  update() {
+  update(deltaTime) {
     this.width = this.baseWidth * gameState.paddleShrink;
 
     // 前フレームの位置を記録
     this.prevX = this.x;
 
+    const moveAmount = this.speed * deltaTime;
     if (gameState.keys.left && this.x > 0) {
-      this.x -= this.speed;
+      this.x -= moveAmount;
     }
     if (gameState.keys.right && this.x < canvas.width - this.width) {
-      this.x += this.speed;
+      this.x += moveAmount;
     }
 
-    // パドルの速度を計算
-    this.velocity = this.x - this.prevX;
+    // パドルの速度を計算（ピクセル/秒）
+    if (deltaTime > 0) {
+      this.velocity = (this.x - this.prevX) / deltaTime;
+    }
   }
 
   draw() {
@@ -264,15 +268,15 @@ class Paddle {
 class Ball {
   constructor(x, y, dx, dy) {
     this.x = x || canvas.width / 2;
-    this.y = y || canvas.height - 60;
+    this.y = y || canvas.height - 120; // パドルの上に配置
     this.radius = 6;
-    this.baseSpeed = 6;
-    this.dx = dx || 0;
-    this.dy = dy || 0;
+    this.baseSpeed = 360; // ピクセル/秒
+    this.dx = dx || 0; // ピクセル/秒
+    this.dy = dy || 0; // ピクセル/秒
     this.isLaunched = (dx !== undefined && dy !== undefined); // 発射済みフラグ
   }
 
-  update() {
+  update(deltaTime) {
     // 未発射の場合はパドルに追従
     if (!this.isLaunched) {
       const paddle = gameState.paddle;
@@ -281,8 +285,8 @@ class Ball {
       return false;
     }
 
-    this.x += this.dx;
-    this.y += this.dy;
+    this.x += this.dx * deltaTime;
+    this.y += this.dy * deltaTime;
 
     // 壁反射
     if (this.x - this.radius < 0 || this.x + this.radius > canvas.width) {
@@ -318,7 +322,7 @@ class Ball {
 
       // パドルの動きによる摩擦効果（英語をかける）
       const frictionFactor = 0.3; // 摩擦の強さ（0-1）
-      this.dx += paddle.velocity * frictionFactor;
+      this.dx += paddle.velocity * frictionFactor; // velocity は ピクセル/秒
 
       // 最低Y速度を保証（水平に近すぎる角度を防ぐ）
       const minYSpeed = this.baseSpeed * 0.5;
@@ -460,13 +464,13 @@ class Block {
     return this.hp <= 0; // 破壊されたらtrue
   }
 
-  update() {
+  update(deltaTime) {
     // 壊れないブロックは移動しない
     if (this.isIndestructible) return;
 
     // 壊れ要素：ブロック移動
     if (gameState.blockMovement > 0) {
-      this.x += this.moveDir * gameState.blockMovement;
+      this.x += this.moveDir * gameState.blockMovement * deltaTime;
 
       // 画面端で反転
       if (this.x < 0 || this.x + this.width > canvas.width) {
@@ -656,7 +660,7 @@ function startWave() {
 
   if (wave >= 2) gameState.angleRandomness = Math.min(0.5, (wave - 1) * 0.2);
   if (wave >= 3) gameState.speedVariation = Math.min(1.2, (wave - 2) * 0.3);
-  if (wave >= 4) gameState.blockMovement = Math.min(3, (wave - 3) * 0.5);
+  if (wave >= 4) gameState.blockMovement = Math.min(180, (wave - 3) * 30); // ピクセル/秒
   if (wave >= 5) gameState.paddleShrink = Math.max(0.3, 1 - (wave - 4) * 0.06);
   if (wave >= 6) gameState.angleRandomness = Math.min(1.5, (wave - 5) * 0.3 + 0.5);
 
@@ -676,22 +680,35 @@ function updateStats() {
 }
 
 // ゲームループ
-function gameLoop() {
-  if (!gameState.isPlaying) return;
+function gameLoop(currentTime) {
+  if (!gameState.isPlaying) {
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+
+  // デルタタイム計算（秒単位）
+  if (gameState.lastTime === 0) {
+    gameState.lastTime = currentTime;
+  }
+  const deltaTime = (currentTime - gameState.lastTime) / 1000;
+  gameState.lastTime = currentTime;
+
+  // 異常なdeltaTime（タブ切り替え等）を防ぐ
+  const clampedDeltaTime = Math.min(deltaTime, 0.1);
 
   // クリア
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // 更新
-  gameState.paddle.update();
+  gameState.paddle.update(clampedDeltaTime);
 
   for (const block of gameState.blocks) {
-    block.update();
+    block.update(clampedDeltaTime);
   }
 
   for (let i = gameState.balls.length - 1; i >= 0; i--) {
-    const isDead = gameState.balls[i].update();
+    const isDead = gameState.balls[i].update(clampedDeltaTime);
     if (isDead) {
       gameState.balls.splice(i, 1);
     }
@@ -748,7 +765,8 @@ function startGame() {
     speedVariation: 0,
     blockMovement: 0,
     paddleShrink: 1,
-    blockRespawn: false
+    blockRespawn: false,
+    lastTime: 0
   };
 
   document.getElementById('settings-panel').style.display = 'none';
