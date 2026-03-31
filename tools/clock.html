@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>時計</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    #clock-date {
+      font-size: 1rem;
+      opacity: 0.7;
+    }
+    #clock-time {
+      font-size: 3rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .watch-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      justify-items: center;
+      max-width: 620px;
+      margin: 0 auto;
+    }
+    @media (max-width: 575px) {
+      .watch-row {
+        grid-template-columns: 1fr;
+      }
+    }
+    .watch-item {
+      text-align: center;
+    }
+    .watch-item canvas {
+      border-radius: 50%;
+      max-width: 260px;
+      max-height: 260px;
+      width: 100%;
+      height: auto;
+    }
+    .watch-label {
+      font-size: 0.8rem;
+      opacity: 0.5;
+      margin-top: 4px;
+    }
+    .color-picker {
+      font-size: 0.75rem;
+      opacity: 0.4;
+    }
+    .color-picker:hover {
+      opacity: 0.8;
+    }
+    [data-bs-theme="light"] .color-picker {
+      display: none;
+    }
+    .color-picker a {
+      color: inherit;
+      text-decoration: none;
+      margin: 0 0.4em;
+    }
+    .color-picker a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar bg-body-tertiary" id="header" aria-label="header">
+  <div class="container-fluid justify-content-start">
+    <a class="navbar-brand" href="/">takemitsu.net</a>
+    <div class="nav-text">時計</div>
+    <ul class="navbar-nav flex-row ms-auto mb-2 mb-lg-0">
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('dark')">dark</a></li>
+      <li class="nav-item mx-1"><a class="nav-link" href="#" onclick="changeTheme('light')">light</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <div class="text-center mb-4">
+    <div id="clock-date"></div>
+    <div id="clock-time"></div>
+  </div>
+
+  <div class="text-center mb-3">
+    <span class="color-picker">
+      <a href="#" onclick="setClockColor('amber')">amber</a>
+      <a href="#" onclick="setClockColor('copper')">copper</a>
+      <a href="#" onclick="setClockColor('emerald')">emerald</a>
+      <a href="#" onclick="setClockColor('yellow')">yellow</a>
+    </span>
+  </div>
+
+  <div class="watch-row">
+    <div class="watch-item">
+      <canvas id="cBlade" width="600" height="600"></canvas>
+      <div class="watch-label">blade — 秒針連動</div>
+    </div>
+    <div class="watch-item">
+      <canvas id="cMoire" width="600" height="600"></canvas>
+      <div class="watch-label">moiré — 秒針連動</div>
+    </div>
+    <div class="watch-item">
+      <canvas id="cAnalog" width="600" height="600"></canvas>
+      <div class="watch-label">analog clock</div>
+    </div>
+    <div class="watch-item">
+      <canvas id="cGeo" width="600" height="600"></canvas>
+      <div class="watch-label">geometry — 秒針連動</div>
+    </div>
+  </div>
+</div>
+
+<script src="../setTheme.mini.js"></script>
+<script>
+(function() {
+  var W = 600, cx = 300, cy = 300, R = 270;
+
+  // --- Clock color scheme ---
+  var darkPalettes = {
+    emerald: { face1: '#2EAD6B', face2: '#239558', face3: '#1A7042' },
+    amber:   { face1: '#D4920A', face2: '#B87A08', face3: '#8A5C06' },
+    copper:  { face1: '#C87533', face2: '#B5652B', face3: '#8B4513' },
+    yellow:  { face1: '#F5E630', face2: '#EADB00', face3: '#C8B500' }
+  };
+  function getClockColor() { return localStorage.getItem('clockColor') || 'amber'; }
+  window.setClockColor = function(c) { localStorage.setItem('clockColor', c); };
+
+  // --- Theme-aware colors ---
+  function isDark() {
+    return document.documentElement.getAttribute('data-bs-theme') === 'dark';
+  }
+  function colors() {
+    if (isDark()) {
+      var p = darkPalettes[getClockColor()] || darkPalettes.emerald;
+      return {
+        bg: '#111', caseDark: '#2a2a2a', caseMid: '#1a1a1a', caseLight: '#333', caseEdge: '#0e0e0e',
+        caseStroke: '#4a4a4a', face1: p.face1, face2: p.face2, face3: p.face3,
+        blade: 'rgba(10,10,10,0.92)', hubFill1: '#555', hubFill2: '#111', hubStroke: '#5a5a5a',
+        hand: '#111', handThin: '#333', secondHand: '#e03030',
+        tick: '#222', tickMinor: 'rgba(30,30,30,0.5)',
+        geoStroke: 'rgba(10,10,10,0.8)', geoFill: 'rgba(10,10,10,0.15)'
+      };
+    } else {
+      return {
+        bg: '#f0f0f0', caseDark: '#ccc', caseMid: '#ddd', caseLight: '#bbb', caseEdge: '#e5e5e5',
+        caseStroke: '#aaa', face1: '#1a5276', face2: '#1f6f8b', face3: '#154360',
+        blade: 'rgba(255,255,255,0.92)', hubFill1: '#bbb', hubFill2: '#eee', hubStroke: '#999',
+        hand: '#fff', handThin: '#ddd', secondHand: '#e03030',
+        tick: '#fff', tickMinor: 'rgba(255,255,255,0.5)',
+        geoStroke: 'rgba(255,255,255,0.85)', geoFill: 'rgba(255,255,255,0.15)'
+      };
+    }
+  }
+
+  // --- Digital clock ---
+  var elDate = document.getElementById('clock-date');
+  var elTime = document.getElementById('clock-time');
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function updateDigital() {
+    var now = new Date();
+    elDate.textContent = now.getFullYear() + '年' + pad(now.getMonth() + 1) + '月' + pad(now.getDate()) + '日';
+    elTime.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+  }
+
+  // --- Time fractions ---
+  function getTimeFractions() {
+    var now = new Date();
+    var ms = now.getMilliseconds();
+    var s = now.getSeconds() + ms / 1000;
+    var m = now.getMinutes() + s / 60;
+    var h = (now.getHours() % 12) + m / 60;
+    return { s: s, m: m, h: h };
+  }
+
+  // --- Common draw helpers ---
+  function drawCase(c, col) {
+    c.save();
+    var g = c.createRadialGradient(cx, cy, R - 2, cx, cy, R + 18);
+    g.addColorStop(0, col.caseDark); g.addColorStop(0.4, col.caseMid);
+    g.addColorStop(0.75, col.caseLight); g.addColorStop(1, col.caseEdge);
+    c.beginPath(); c.arc(cx, cy, R + 16, 0, Math.PI * 2); c.fillStyle = g; c.fill();
+    c.beginPath(); c.arc(cx, cy, R + 1, 0, Math.PI * 2);
+    c.lineWidth = 1.5; c.strokeStyle = col.caseStroke; c.stroke();
+    c.restore();
+  }
+
+  function drawFace(c, col) {
+    var g = c.createRadialGradient(cx - 15, cy - 15, 20, cx, cy, R);
+    g.addColorStop(0, col.face1); g.addColorStop(0.5, col.face2); g.addColorStop(1, col.face3);
+    c.fillStyle = g; c.fillRect(0, 0, W, W);
+  }
+
+  function drawHub(c, col) {
+    c.beginPath(); c.arc(cx, cy, 10, 0, Math.PI * 2);
+    var g = c.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, 10);
+    g.addColorStop(0, col.hubFill1); g.addColorStop(1, col.hubFill2);
+    c.fillStyle = g; c.fill();
+    c.lineWidth = 0.8; c.strokeStyle = col.hubStroke; c.stroke();
+  }
+
+  // --- 1) Blade watch ---
+  var cBlade = document.getElementById('cBlade'), xBlade = cBlade.getContext('2d');
+
+  function makeBladeDisc(n, lineW, col) {
+    var o = document.createElement('canvas'); o.width = W; o.height = W;
+    var c = o.getContext('2d');
+    var sa = Math.PI * 2 / n;
+    var gapAngle = 4 / R;
+    c.lineWidth = lineW; c.lineCap = 'round'; c.lineJoin = 'round';
+    c.strokeStyle = col.blade;
+    for (var i = 0; i < n; i++) {
+      var a = sa * i;
+      var tipR = R * 0.95, notchR = R * 0.45, baseR = 18;
+      var halfW = (sa - gapAngle) * 0.5 * 0.85;
+      c.beginPath();
+      c.moveTo(cx + Math.cos(a) * baseR, cy + Math.sin(a) * baseR);
+      c.lineTo(cx + Math.cos(a - halfW) * tipR, cy + Math.sin(a - halfW) * tipR);
+      c.lineTo(cx + Math.cos(a) * notchR, cy + Math.sin(a) * notchR);
+      c.lineTo(cx + Math.cos(a + halfW) * tipR, cy + Math.sin(a + halfW) * tipR);
+      c.lineTo(cx + Math.cos(a) * baseR, cy + Math.sin(a) * baseR);
+      c.stroke();
+      var invFeetR = notchR - 10, invPeakR = notchR - ((notchR - baseR) * 0.55);
+      var invHalfW = halfW * 0.55;
+      c.beginPath();
+      c.moveTo(cx + Math.cos(a - invHalfW) * invFeetR, cy + Math.sin(a - invHalfW) * invFeetR);
+      c.lineTo(cx + Math.cos(a) * invPeakR, cy + Math.sin(a) * invPeakR);
+      c.lineTo(cx + Math.cos(a + invHalfW) * invFeetR, cy + Math.sin(a + invHalfW) * invFeetR);
+      c.stroke();
+      var shift = (tipR - invFeetR) * 0.9;
+      c.beginPath();
+      c.moveTo(cx + Math.cos(a - invHalfW) * (invFeetR + shift), cy + Math.sin(a - invHalfW) * (invFeetR + shift));
+      c.lineTo(cx + Math.cos(a) * (invPeakR + shift), cy + Math.sin(a) * (invPeakR + shift));
+      c.lineTo(cx + Math.cos(a + invHalfW) * (invFeetR + shift), cy + Math.sin(a + invHalfW) * (invFeetR + shift));
+      c.stroke();
+    }
+    return o;
+  }
+
+  function drawRot(c, d, a) {
+    c.save(); c.translate(cx, cy); c.rotate(a); c.drawImage(d, -cx, -cy); c.restore();
+  }
+
+  // --- 2) Moiré watch ---
+  var cMoire = document.getElementById('cMoire'), xMoire = cMoire.getContext('2d');
+
+  function makeHalfCircleDisc(nc, cr, rr, lw, op, side, col) {
+    var o = document.createElement('canvas'); o.width = W; o.height = W;
+    var c = o.getContext('2d');
+    var baseColor = col.blade;
+    c.lineWidth = lw; c.strokeStyle = baseColor.replace(/[\d.]+\)$/, op + ')'); c.lineCap = 'round';
+    for (var i = 0; i < nc; i++) {
+      var a = Math.PI * 2 / nc * i;
+      var px = cx + Math.cos(a) * rr, py = cy + Math.sin(a) * rr;
+      c.beginPath();
+      if (side === 'cw') c.arc(px, py, cr, a - Math.PI, a);
+      else c.arc(px, py, cr, a, a + Math.PI);
+      c.stroke();
+    }
+    return o;
+  }
+
+  // --- 3) Analog clock ---
+  var cAnalog = document.getElementById('cAnalog'), xAnalog = cAnalog.getContext('2d');
+
+  function drawAnalog(c, tf, col) {
+    c.clearRect(0, 0, W, W);
+    drawCase(c, col);
+    c.save(); c.beginPath(); c.arc(cx, cy, R, 0, Math.PI * 2); c.clip();
+    drawFace(c, col);
+
+    // Hour ticks
+    for (var i = 0; i < 60; i++) {
+      var a = Math.PI * 2 / 60 * i - Math.PI / 2;
+      var isHour = (i % 5 === 0);
+      var outerR = R * 0.92, innerR = isHour ? R * 0.78 : R * 0.86;
+      c.beginPath();
+      c.moveTo(cx + Math.cos(a) * innerR, cy + Math.sin(a) * innerR);
+      c.lineTo(cx + Math.cos(a) * outerR, cy + Math.sin(a) * outerR);
+      c.lineWidth = isHour ? 5 : 1.5;
+      c.strokeStyle = isHour ? col.tick : col.tickMinor;
+      c.lineCap = 'round';
+      c.stroke();
+    }
+
+    // Hour hand
+    var ha = (tf.h / 12) * Math.PI * 2 - Math.PI / 2;
+    c.beginPath();
+    c.moveTo(cx + Math.cos(ha + Math.PI) * 20, cy + Math.sin(ha + Math.PI) * 20);
+    c.lineTo(cx + Math.cos(ha) * R * 0.55, cy + Math.sin(ha) * R * 0.55);
+    c.lineWidth = 8; c.strokeStyle = col.hand; c.lineCap = 'round'; c.stroke();
+
+    // Minute hand
+    var ma = (tf.m / 60) * Math.PI * 2 - Math.PI / 2;
+    c.beginPath();
+    c.moveTo(cx + Math.cos(ma + Math.PI) * 20, cy + Math.sin(ma + Math.PI) * 20);
+    c.lineTo(cx + Math.cos(ma) * R * 0.78, cy + Math.sin(ma) * R * 0.78);
+    c.lineWidth = 5; c.strokeStyle = col.hand; c.lineCap = 'round'; c.stroke();
+
+    // Second hand
+    var sa = (tf.s / 60) * Math.PI * 2 - Math.PI / 2;
+    c.beginPath();
+    c.moveTo(cx + Math.cos(sa + Math.PI) * 30, cy + Math.sin(sa + Math.PI) * 30);
+    c.lineTo(cx + Math.cos(sa) * R * 0.88, cy + Math.sin(sa) * R * 0.88);
+    c.lineWidth = 2; c.strokeStyle = col.secondHand; c.lineCap = 'round'; c.stroke();
+
+    c.restore();
+    drawHub(c, col);
+  }
+
+  // --- 4) Geometry watch ---
+  var cGeo = document.getElementById('cGeo'), xGeo = cGeo.getContext('2d');
+
+  function drawGeo(c, tf, col) {
+    c.clearRect(0, 0, W, W);
+    drawCase(c, col);
+    c.save(); c.beginPath(); c.arc(cx, cy, R, 0, Math.PI * 2); c.clip();
+    drawFace(c, col);
+
+    var secAngle = (tf.s / 60) * Math.PI * 2;
+    var minAngle = (tf.m / 60) * Math.PI * 2;
+    var hourAngle = (tf.h / 12) * Math.PI * 2;
+
+    // Three polygon rings, each at different speed/direction
+    var rings = [
+      { rr: R * 0.30, sides: 5, rot: secAngle * 3 },
+      { rr: R * 0.55, sides: 7, rot: -secAngle * 2 },
+      { rr: R * 0.80, sides: 11, rot: secAngle * 1.3 }
+    ];
+    for (var ri = 0; ri < rings.length; ri++) {
+      var ring = rings[ri];
+      c.beginPath();
+      for (var i = 0; i <= ring.sides; i++) {
+        var a = (Math.PI * 2 / ring.sides) * i + ring.rot;
+        var px = cx + Math.cos(a) * ring.rr, py = cy + Math.sin(a) * ring.rr;
+        if (i === 0) c.moveTo(px, py); else c.lineTo(px, py);
+      }
+      c.closePath();
+      c.lineWidth = 2.5;
+      c.strokeStyle = col.geoStroke;
+      c.fillStyle = col.geoFill;
+      c.fill();
+      c.stroke();
+
+      // Marker dot on first vertex to show rotation
+      var ma = ring.rot;
+      c.beginPath();
+      c.arc(cx + Math.cos(ma) * ring.rr, cy + Math.sin(ma) * ring.rr, 5, 0, Math.PI * 2);
+      c.fillStyle = col.secondHand;
+      c.fill();
+    }
+
+    // Rotating spokes based on seconds (was minutes)
+    var spokeCount = 12;
+    for (var i = 0; i < spokeCount; i++) {
+      var a = (Math.PI * 2 / spokeCount) * i + hourAngle;
+      c.beginPath();
+      c.moveTo(cx + Math.cos(a) * 18, cy + Math.sin(a) * 18);
+      c.lineTo(cx + Math.cos(a) * R * 0.93, cy + Math.sin(a) * R * 0.93);
+      c.lineWidth = 1;
+      c.strokeStyle = col.geoStroke;
+      c.stroke();
+    }
+
+    c.restore();
+    drawHub(c, col);
+  }
+
+  // --- Main loop ---
+  var prevTheme = null;
+  var bladeA, bladeB, moireFwd, moireRev;
+
+  function rebuildDiscs(col) {
+    bladeA = makeBladeDisc(8, 3.5, col);
+    bladeB = makeBladeDisc(8, 3, col);
+    var cR = R * 0.44, rR = R * 0.50;
+    moireFwd = makeHalfCircleDisc(16, cR, rR, 3.5, 0.88, 'cw', col);
+    moireRev = makeHalfCircleDisc(16, cR, rR, 3, 0.75, 'ccw', col);
+  }
+
+  function loop() {
+    var col = colors();
+    var curTheme = (isDark() ? 'dark' : 'light') + ':' + getClockColor();
+    if (curTheme !== prevTheme) {
+      rebuildDiscs(col);
+      prevTheme = curTheme;
+    }
+
+    updateDigital();
+    var tf = getTimeFractions();
+
+    // Blade: one layer static, one rotates with seconds
+    var secAngle = (tf.s / 60) * Math.PI * 2;
+    xBlade.clearRect(0, 0, W, W);
+    drawCase(xBlade, col);
+    xBlade.save(); xBlade.beginPath(); xBlade.arc(cx, cy, R, 0, Math.PI * 2); xBlade.clip();
+    drawFace(xBlade, col);
+    drawRot(xBlade, bladeA, 0);
+    drawRot(xBlade, bladeB, secAngle);
+    xBlade.restore();
+    drawHub(xBlade, col);
+
+    // Moiré: one static, one rotates with seconds
+    xMoire.clearRect(0, 0, W, W);
+    drawCase(xMoire, col);
+    xMoire.save(); xMoire.beginPath(); xMoire.arc(cx, cy, R, 0, Math.PI * 2); xMoire.clip();
+    drawFace(xMoire, col);
+    drawRot(xMoire, moireFwd, 0);
+    drawRot(xMoire, moireRev, secAngle);
+    xMoire.restore();
+    drawHub(xMoire, col);
+
+    // Analog
+    drawAnalog(xAnalog, tf, col);
+
+    // Geometry
+    drawGeo(xGeo, tf, col);
+
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
